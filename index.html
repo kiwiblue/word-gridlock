@@ -675,6 +675,7 @@ function initSetup() {
       br.querySelectorAll('.count-btn').forEach(btn => btn.classList.remove('selected'));
       b.classList.add('selected');
       updateTerritoryCardVisibility();
+      updateMinWordBtnVisibility();
     };
     br.appendChild(b);
   });
@@ -682,7 +683,7 @@ function initSetup() {
   // min word length buttons
   const mwr = document.getElementById('minword-row');
   mwr.innerHTML = '';
-  [3,4,5,6].forEach(n => {
+  [3,4,5].forEach(n => {
     const b = document.createElement('button');
     b.className = 'count-btn' + (n === minWordLen ? ' selected' : '');
     b.textContent = `${n} letters`;
@@ -733,6 +734,7 @@ function applyPlayerDefaults(n) {
     b.classList.toggle('selected', parseInt(b.dataset.n) === minWordLen);
   });
   updateTerritoryCardVisibility();
+  updateMinWordBtnVisibility();
 }
 
 const TERRITORY_DESC = {
@@ -748,6 +750,20 @@ function setTerritory(mode) {
   });
   const desc = document.getElementById('territory-desc');
   if (desc) desc.textContent = TERRITORY_DESC[mode] || '';
+}
+
+function updateMinWordBtnVisibility() {
+  const maxLen = boardSize === 5 ? 4 : 5;
+  document.querySelectorAll('#minword-row .count-btn').forEach(b => {
+    const n = parseInt(b.dataset.n);
+    b.style.display = n > maxLen ? 'none' : '';
+  });
+  if (minWordLen > maxLen) {
+    minWordLen = maxLen;
+    document.querySelectorAll('#minword-row .count-btn').forEach(b => {
+      b.classList.toggle('selected', parseInt(b.dataset.n) === minWordLen);
+    });
+  }
 }
 
 function updateTerritoryCardVisibility() {
@@ -1127,7 +1143,7 @@ function attemptClaim(r1, c1, r2, c2) {
   G.passCount = 0;
 
   G.claimed.push({ word, path, pi: G.cur });
-  drawLine(path, G.cur);
+  if (G.territoryMode === 'off') drawLine(path, G.cur);
 
   // Mark territory and tint cells
   if (G.territory) {
@@ -1137,8 +1153,8 @@ function attemptClaim(r1, c1, r2, c2) {
       if (G.territoryMode === 'exclusive' && G.territory[r][c] !== null) return;
       G.territory[r][c] = G.cur;
       const el = cellEl(r, c);
-      el.style.setProperty('--tc', col + '28');
-      el.style.setProperty('--tc-hover', col + '50');
+      el.style.setProperty('--tc', col + '55');
+      el.style.setProperty('--tc-hover', col + '80');
     });
   }
   updateWordList();
@@ -1316,7 +1332,8 @@ function redrawSVG() {
   const svg = document.getElementById('svg-overlay');
   svg.innerHTML = '';
   if (!G) return;
-  G.claimed.forEach(cw => drawLine(cw.path, cw.pi));
+  if (G.territoryMode === 'off')
+    G.claimed.forEach(cw => drawLine(cw.path, cw.pi));
 }
 
 // ═══════════════════════════════════════════════════
