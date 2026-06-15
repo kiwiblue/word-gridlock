@@ -580,56 +580,7 @@ function buildDict() {
 // This function accepts a word if it's in the dictionary OR if stripping a
 // common English suffix reveals a base word that is.
 function isValidWord(word) {
-  if (dict.has(word)) return true;
-
-  const d = dict;
-
-  // +S:  CATS→CAT, DOGS→DOG
-  if (word.endsWith('S') && d.has(word.slice(0,-1))) return true;
-
-  // +ES: BOXES→BOX, CHURCHES→CHURCH
-  if (word.endsWith('ES') && d.has(word.slice(0,-2))) return true;
-
-  // +IES: TRIES→TRY, FLIES→FLY
-  if (word.endsWith('IES') && d.has(word.slice(0,-3)+'Y')) return true;
-
-  // +ED: PLAYED→PLAY, TALKED→TALK
-  if (word.endsWith('ED') && d.has(word.slice(0,-2))) return true;
-
-  // +D:  MOVED→MOVE, LOVED→LOVE  (base ends in E)
-  if (word.endsWith('D') && d.has(word.slice(0,-1)+'E')) return true;
-
-  // +IED: TRIED→TRY, CRIED→CRY
-  if (word.endsWith('IED') && d.has(word.slice(0,-3)+'Y')) return true;
-
-  // doubled-consonant +ED: STOPPED→STOP, PLANNED→PLAN
-  if (word.endsWith('ED') && word.length >= 5) {
-    const b = word.slice(0,-2);
-    if (b[b.length-1] === b[b.length-2] && d.has(b.slice(0,-1))) return true;
-  }
-
-  // +ING: SINGING→SING, PLAYING→PLAY
-  if (word.endsWith('ING') && d.has(word.slice(0,-3))) return true;
-
-  // E-drop +ING: MAKING→MAKE, DANCING→DANCE
-  if (word.endsWith('ING') && d.has(word.slice(0,-3)+'E')) return true;
-
-  // doubled-consonant +ING: RUNNING→RUN, STOPPING→STOP
-  if (word.endsWith('ING') && word.length >= 6) {
-    const b = word.slice(0,-3);
-    if (b[b.length-1] === b[b.length-2] && d.has(b.slice(0,-1))) return true;
-  }
-
-  // +ER: PLAYER→PLAY, FASTER→FAST
-  if (word.endsWith('ER') && d.has(word.slice(0,-2))) return true;
-
-  // +EST: FASTEST→FAST
-  if (word.endsWith('EST') && d.has(word.slice(0,-3))) return true;
-
-  // +LY: QUICKLY→QUICK, SLOWLY→SLOW
-  if (word.endsWith('LY') && d.has(word.slice(0,-2))) return true;
-
-  return false;
+  return dict.has(word);
 }
 
 // ═══════════════════════════════════════════════════
@@ -1771,12 +1722,11 @@ async function runBotTurn() {
       await sleep(diff === 'easy' ? 900 : 700);
       if (!G || G.cur !== myIdx) return;
 
-      const lettersBefore = G.lettersLeft;
       const p = chosen.path;
       attemptClaim(p[0].r, p[0].c, p[p.length-1].r, p[p.length-1].c);
       await sleep(600);
       if (!G || G.cur !== myIdx) return;
-      if (G.lettersLeft <= lettersBefore) break; // claim failed or no bonus letter
+      break; // one letter placed, one word claimed per turn
     }
   } finally {
     if (G) {
