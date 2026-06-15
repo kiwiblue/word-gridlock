@@ -1,0 +1,1421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scramble</title>
+<script src="words.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  background: #0f172a;
+  color: #e2e8f0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+h1 {
+  font-size: 2.2rem;
+  letter-spacing: 0.25em;
+  color: #a78bfa;
+  padding: 1.2rem 0 0.6rem;
+  text-transform: uppercase;
+}
+
+/* ── SETUP ─────────────────────────────────────────── */
+#setup-screen {
+  width: 100%;
+  max-width: 520px;
+  padding: 1rem 1.5rem 2rem;
+}
+
+.setup-card {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.setup-card h2 {
+  color: #94a3b8;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 1rem;
+}
+
+.count-row { display: flex; gap: 0.6rem; }
+
+.count-btn {
+  padding: 0.5rem 1.4rem;
+  border: 2px solid #334155;
+  border-radius: 6px;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.count-btn.selected {
+  border-color: #7c3aed;
+  color: #c4b5fd;
+  background: rgba(124,58,237,0.15);
+}
+
+.player-forms { display: flex; flex-direction: column; gap: 1rem; }
+
+.pform {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.75rem;
+  background: #0f172a;
+  border-radius: 8px;
+}
+
+.pform-label {
+  color: #64748b;
+  font-size: 0.85rem;
+  width: 52px;
+  flex-shrink: 0;
+}
+
+.pform input {
+  background: #1e293b;
+  border: 2px solid #334155;
+  color: white;
+  padding: 0.4rem 0.5rem;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: bold;
+  width: 64px;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.pform input:focus { outline: none; border-color: #7c3aed; }
+
+.color-picker { display: flex; gap: 5px; flex-wrap: wrap; flex: 1; }
+
+.color-swatch {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  cursor: pointer;
+  transition: transform 0.12s, border-color 0.12s;
+  flex-shrink: 0;
+}
+.color-swatch:hover { transform: scale(1.2); }
+.color-swatch.selected { border-color: white; transform: scale(1.2); }
+.color-swatch.taken { opacity: 0.2; cursor: default; transform: none !important; }
+
+.btn-start {
+  width: 100%;
+  padding: 0.9rem;
+  font-size: 1.1rem;
+  font-weight: bold;
+  background: #7c3aed;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  letter-spacing: 0.05em;
+  transition: background 0.15s;
+}
+.btn-start:hover { background: #6d28d9; }
+
+/* ── GAME ──────────────────────────────────────────── */
+#game-screen {
+  display: none;
+  width: 100%;
+  max-width: 1060px;
+  padding: 0.5rem 1rem 2rem;
+}
+
+.game-layout {
+  display: flex;
+  gap: 1.25rem;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+/* Grid */
+.grid-wrap {
+  position: relative;
+  width: 520px;
+  height: 520px;
+  flex-shrink: 0;
+}
+
+#grid {
+  display: grid;
+  grid-template-columns: repeat(10, 52px);
+  grid-template-rows: repeat(10, 52px);
+  border: 2px solid #334155;
+  user-select: none;
+}
+
+.cell {
+  width: 52px;
+  height: 52px;
+  border: 1px solid #1e3a5f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  font-weight: 900;
+  cursor: pointer;
+  background: #0c1628;
+  color: #ffffff;
+  text-shadow:
+    -2px -2px 0 #0c1628,  2px -2px 0 #0c1628,
+    -2px  2px 0 #0c1628,  2px  2px 0 #0c1628,
+    -3px  0   0 #0c1628,  3px  0   0 #0c1628,
+     0   -3px 0 #0c1628,  0    3px 0 #0c1628;
+  transition: background 0.1s;
+  position: relative;
+}
+.cell:hover { background: #152238; }
+.cell.claim-start { background: rgba(250,204,21,0.35) !important; }
+.cell.claim-hover { background: rgba(125,211,252,0.15); }
+
+.svg-overlay {
+  position: absolute;
+  top: 0; left: 0;
+  width: 520px; height: 520px;
+  pointer-events: none;
+}
+
+/* Side panel */
+.side {
+  flex: 1;
+  min-width: 260px;
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.panel {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 0.9rem 1rem;
+}
+
+/* Timer */
+.timer-wrap { text-align: center; }
+.timer-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #64748b;
+  margin-bottom: 0.2rem;
+}
+.timer-number {
+  font-size: 3rem;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  color: #e2e8f0;
+  line-height: 1;
+  transition: color 0.3s;
+}
+.timer-number.warn { color: #f59e0b; }
+.timer-number.urgent { color: #ef4444; animation: blink 0.6s step-end infinite; }
+@keyframes blink { 50% { opacity: 0.5; } }
+
+/* Players panel */
+.player-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+.player-row.active { background: rgba(255,255,255,0.07); }
+
+.pdot {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.pname { font-weight: bold; flex: 1; font-size: 0.95rem; }
+.pscore {
+  font-size: 1.25rem;
+  font-weight: 900;
+  min-width: 32px;
+  text-align: right;
+}
+.pturn-arrow {
+  font-size: 0.7rem;
+  color: #64748b;
+}
+
+/* Controls */
+.turn-label {
+  font-size: 1rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+.mode-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+.mode-place { background: #14532d; color: #86efac; }
+.mode-claim { background: #0c4a6e; color: #7dd3fc; }
+.mode-claim-started { background: #1e3a8a; color: #bfdbfe; }
+
+.bonus-line {
+  font-size: 0.85rem;
+  color: #fbbf24;
+  margin-bottom: 0.5rem;
+}
+
+.btn-row { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+.btn {
+  padding: 0.55rem 1rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+}
+.btn:hover:not(:disabled) { opacity: 0.85; transform: translateY(-1px); }
+.btn:active:not(:disabled) { transform: translateY(0); }
+.btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.btn-claim { background: #0891b2; color: white; }
+.btn-pass  { background: #7f1d1d; color: #fca5a5; }
+
+/* Message bar */
+.msg-bar {
+  font-size: 0.85rem;
+  min-height: 2.2rem;
+  display: flex;
+  align-items: center;
+  line-height: 1.35;
+}
+.msg-ok    { color: #4ade80; }
+.msg-err   { color: #f87171; }
+.msg-info  { color: #93c5fd; }
+
+/* Letter keyboard */
+.keyboard {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+.lbtn {
+  width: 33px;
+  height: 33px;
+  background: #1e3a5f;
+  border: 2px solid #2d4f7c;
+  border-radius: 4px;
+  color: #e2e8f0;
+  font-size: 0.85rem;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.1s;
+  flex-shrink: 0;
+}
+.lbtn:hover { background: #2d5a9e; }
+.lbtn.sel   { background: #7c3aed; border-color: #a78bfa; }
+
+/* Word list */
+.wordlist-scroll {
+  max-height: 200px;
+  overflow-y: auto;
+  margin-top: 0.4rem;
+}
+.wentry {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.18rem 0;
+  font-size: 0.82rem;
+}
+.wdot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.wplayer { font-weight: bold; }
+.wword { color: #cbd5e1; }
+.list-empty { color: #475569; font-size: 0.82rem; }
+
+.section-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #475569;
+  margin-bottom: 0.4rem;
+}
+
+/* ── END SCREEN ────────────────────────────────────── */
+#end-screen {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem 1.5rem;
+  width: 100%;
+  max-width: 500px;
+}
+
+#end-screen h2 {
+  font-size: 2rem;
+  color: #a78bfa;
+  letter-spacing: 0.1em;
+  margin-bottom: 1.5rem;
+}
+
+.final-row {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.8rem 1rem;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+  width: 100%;
+  font-size: 1.1rem;
+}
+.final-rank { width: 1.8rem; text-align: center; font-size: 1.3rem; }
+.final-name { flex: 1; font-weight: bold; }
+.final-score { font-size: 1.5rem; font-weight: 900; }
+.final-words { font-size: 0.8rem; color: #64748b; }
+
+.btn-again {
+  margin-top: 1.5rem;
+  padding: 0.8rem 2.5rem;
+  background: #7c3aed;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+}
+.btn-again:hover { background: #6d28d9; }
+
+/* scrollbar */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<h1>Scramble</h1>
+
+<!-- ══ SETUP ═══════════════════════════════════════════ -->
+<div id="setup-screen">
+  <div class="setup-card">
+    <h2>Number of Players</h2>
+    <div class="count-row" id="count-row"></div>
+  </div>
+  <div class="setup-card">
+    <h2>Board Size</h2>
+    <div class="count-row" id="board-row"></div>
+  </div>
+  <div class="setup-card">
+    <h2>Minimum Word Length</h2>
+    <div class="count-row" id="minword-row"></div>
+  </div>
+  <div class="setup-card">
+    <h2>Player Details</h2>
+    <div class="player-forms" id="player-forms"></div>
+  </div>
+  <div id="dict-status" style="font-size:0.8rem;color:#64748b;text-align:center;margin-bottom:0.75rem"></div>
+  <button class="btn-start" onclick="startGame()">Start Game</button>
+</div>
+
+<!-- ══ GAME ════════════════════════════════════════════ -->
+<div id="game-screen">
+  <div class="game-layout">
+
+    <!-- Grid -->
+    <div class="grid-wrap">
+      <div id="grid"></div>
+      <svg class="svg-overlay" id="svg-overlay"
+           viewBox="0 0 520 520" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+
+    <!-- Side panel -->
+    <div class="side">
+
+      <!-- Timer -->
+      <div class="panel timer-wrap">
+        <div class="timer-label">Time Remaining</div>
+        <div class="timer-number" id="timer-num">2:00</div>
+      </div>
+
+      <!-- Scores -->
+      <div class="panel" id="scores-panel"></div>
+
+      <!-- Controls -->
+      <div class="panel">
+        <div class="turn-label" id="turn-label"></div>
+        <div class="mode-badge mode-place" id="mode-badge">Place mode — select a letter</div>
+        <div class="bonus-line" id="bonus-line" style="display:none"></div>
+        <div class="btn-row">
+          <button class="btn btn-claim" id="btn-claim" onclick="toggleClaim()">Claim Word</button>
+          <button class="btn btn-pass" onclick="doPass()">Pass</button>
+        </div>
+      </div>
+
+      <!-- Message -->
+      <div class="panel msg-bar msg-info" id="msg-bar">Ready to play!</div>
+
+      <!-- Keyboard -->
+      <div class="panel keyboard" id="keyboard"></div>
+
+      <!-- Word list -->
+      <div class="panel">
+        <div class="section-label">Claimed Words</div>
+        <div class="wordlist-scroll" id="word-list">
+          <div class="list-empty">No words yet</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ══ END ═════════════════════════════════════════════ -->
+<div id="end-screen">
+  <h2>Game Over</h2>
+  <div id="final-list" style="width:100%"></div>
+  <p id="end-summary" style="color:#64748b;margin-top:0.75rem;font-size:0.9rem"></p>
+  <button class="btn-again" onclick="backToSetup()">Play Again</button>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════════════
+
+const COLORS = {
+  Red:    '#ef4444',
+  Blue:   '#3b82f6',
+  Pink:   '#ec4899',
+  Yellow: '#eab308',
+  Green:  '#22c55e',
+  Grey:   '#9ca3af',
+};
+const COLOR_NAMES = Object.keys(COLORS);
+
+const TIMER_MAX = 120;
+const BANNED_SUFFIXES = ['ING', 'ES', 'ED', 'S', 'D'];
+
+// ═══════════════════════════════════════════════════
+// DICTIONARY
+// ═══════════════════════════════════════════════════
+
+let dict = null;
+
+function buildDict() {
+  if (!window.WORDS) {
+    dict = new Set();
+    return;
+  }
+  const words = window.WORDS.split('\n');
+  dict = new Set();
+  for (const w of words) {
+    const t = w.trim();
+    if (t.length >= 3) dict.add(t); // store 3+ so suffix-stripping can find short bases
+  }
+}
+
+// The Mac system dictionary (Webster's 1934) is missing many inflected forms.
+// This function accepts a word if it's in the dictionary OR if stripping a
+// common English suffix reveals a base word that is.
+function isValidWord(word) {
+  if (dict.has(word)) return true;
+
+  const d = dict;
+
+  // +S:  CATS→CAT, DOGS→DOG
+  if (word.endsWith('S') && d.has(word.slice(0,-1))) return true;
+
+  // +ES: BOXES→BOX, CHURCHES→CHURCH
+  if (word.endsWith('ES') && d.has(word.slice(0,-2))) return true;
+
+  // +IES: TRIES→TRY, FLIES→FLY
+  if (word.endsWith('IES') && d.has(word.slice(0,-3)+'Y')) return true;
+
+  // +ED: PLAYED→PLAY, TALKED→TALK
+  if (word.endsWith('ED') && d.has(word.slice(0,-2))) return true;
+
+  // +D:  MOVED→MOVE, LOVED→LOVE  (base ends in E)
+  if (word.endsWith('D') && d.has(word.slice(0,-1)+'E')) return true;
+
+  // +IED: TRIED→TRY, CRIED→CRY
+  if (word.endsWith('IED') && d.has(word.slice(0,-3)+'Y')) return true;
+
+  // doubled-consonant +ED: STOPPED→STOP, PLANNED→PLAN
+  if (word.endsWith('ED') && word.length >= 5) {
+    const b = word.slice(0,-2);
+    if (b[b.length-1] === b[b.length-2] && d.has(b.slice(0,-1))) return true;
+  }
+
+  // +ING: SINGING→SING, PLAYING→PLAY
+  if (word.endsWith('ING') && d.has(word.slice(0,-3))) return true;
+
+  // E-drop +ING: MAKING→MAKE, DANCING→DANCE
+  if (word.endsWith('ING') && d.has(word.slice(0,-3)+'E')) return true;
+
+  // doubled-consonant +ING: RUNNING→RUN, STOPPING→STOP
+  if (word.endsWith('ING') && word.length >= 6) {
+    const b = word.slice(0,-3);
+    if (b[b.length-1] === b[b.length-2] && d.has(b.slice(0,-1))) return true;
+  }
+
+  // +ER: PLAYER→PLAY, FASTER→FAST
+  if (word.endsWith('ER') && d.has(word.slice(0,-2))) return true;
+
+  // +EST: FASTEST→FAST
+  if (word.endsWith('EST') && d.has(word.slice(0,-3))) return true;
+
+  // +LY: QUICKLY→QUICK, SLOWLY→SLOW
+  if (word.endsWith('LY') && d.has(word.slice(0,-2))) return true;
+
+  return false;
+}
+
+// ═══════════════════════════════════════════════════
+// SETUP STATE
+// ═══════════════════════════════════════════════════
+
+const PLAYER_DEFAULTS = {
+  2: { board: 5,  minLen: 4 },
+  3: { board: 8,  minLen: 4 },
+  4: { board: 10, minLen: 5 },
+};
+
+let numPlayers = 2;
+let minWordLen = PLAYER_DEFAULTS[2].minLen;
+let boardSize  = PLAYER_DEFAULTS[2].board;
+let setupData = []; // [{name, color}]
+
+function initSetup() {
+  buildDict();
+
+  const statusEl = document.getElementById('dict-status');
+  if (dict.size === 0) {
+    statusEl.innerHTML = '⚠️ Dictionary failed to load — open via <strong>http://localhost:3456</strong> not as a file. Run <code>python3 serve.py</code> in the game folder.';
+    statusEl.style.color = '#f87171';
+    statusEl.style.fontSize = '0.85rem';
+    statusEl.style.textAlign = 'left';
+  } else {
+    statusEl.textContent = `✓ Dictionary loaded — ${dict.size.toLocaleString()} words`;
+    statusEl.style.color = '#4ade80';
+  }
+
+  // count buttons
+  const cr = document.getElementById('count-row');
+  cr.innerHTML = '';
+  [2,3,4].forEach(n => {
+    const b = document.createElement('button');
+    b.className = 'count-btn' + (n === numPlayers ? ' selected' : '');
+    b.textContent = n;
+    b.onclick = () => {
+      numPlayers = n;
+      applyPlayerDefaults(n);
+      updateCountBtns();
+      renderPlayerForms();
+    };
+    cr.appendChild(b);
+  });
+
+  // board size buttons
+  const br = document.getElementById('board-row');
+  br.innerHTML = '';
+  [{n:5,label:'5×5'},{n:8,label:'8×8'},{n:10,label:'10×10'}].forEach(({n, label}) => {
+    const b = document.createElement('button');
+    b.className = 'count-btn' + (n === boardSize ? ' selected' : '');
+    b.textContent = label;
+    b.dataset.n = n;
+    b.onclick = () => {
+      boardSize = n;
+      br.querySelectorAll('.count-btn').forEach(btn => btn.classList.remove('selected'));
+      b.classList.add('selected');
+    };
+    br.appendChild(b);
+  });
+
+  // min word length buttons
+  const mwr = document.getElementById('minword-row');
+  mwr.innerHTML = '';
+  [3,4,5,6].forEach(n => {
+    const b = document.createElement('button');
+    b.className = 'count-btn' + (n === minWordLen ? ' selected' : '');
+    b.textContent = `${n} letters`;
+    b.dataset.n = n;
+    b.onclick = () => {
+      minWordLen = n;
+      mwr.querySelectorAll('.count-btn').forEach(btn => btn.classList.remove('selected'));
+      b.classList.add('selected');
+    };
+    mwr.appendChild(b);
+  });
+
+  // default player data
+  setupData = [];
+  for (let i = 0; i < 4; i++) {
+    setupData.push({ name: '', color: COLOR_NAMES[i] });
+  }
+
+  renderPlayerForms();
+}
+
+function updateCountBtns() {
+  document.querySelectorAll('#count-row .count-btn').forEach(b => {
+    b.classList.toggle('selected', parseInt(b.textContent) === numPlayers);
+  });
+}
+
+function applyPlayerDefaults(n) {
+  const def = PLAYER_DEFAULTS[n];
+  boardSize  = def.board;
+  minWordLen = def.minLen;
+  document.querySelectorAll('#board-row .count-btn').forEach(b => {
+    b.classList.toggle('selected', parseInt(b.dataset.n) === boardSize);
+  });
+  document.querySelectorAll('#minword-row .count-btn').forEach(b => {
+    b.classList.toggle('selected', parseInt(b.dataset.n) === minWordLen);
+  });
+}
+
+function renderPlayerForms() {
+  const container = document.getElementById('player-forms');
+  container.innerHTML = '';
+
+  for (let i = 0; i < numPlayers; i++) {
+    const row = document.createElement('div');
+    row.className = 'pform';
+
+    const label = document.createElement('div');
+    label.className = 'pform-label';
+    label.textContent = `Player ${i + 1}`;
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.maxLength = 10;
+    input.placeholder = `P${i+1}`;
+    input.value = setupData[i].name;
+    input.oninput = () => {
+      setupData[i].name = input.value.toUpperCase();
+    };
+
+    const picker = document.createElement('div');
+    picker.className = 'color-picker';
+    picker.id = `cp-${i}`;
+
+    row.appendChild(label);
+    row.appendChild(input);
+    row.appendChild(picker);
+    container.appendChild(row);
+  }
+
+  refreshColorPickers();
+}
+
+function refreshColorPickers() {
+  const taken = new Map();
+  for (let i = 0; i < numPlayers; i++) {
+    taken.set(setupData[i].color, i);
+  }
+
+  for (let i = 0; i < numPlayers; i++) {
+    const picker = document.getElementById(`cp-${i}`);
+    if (!picker) continue;
+    picker.innerHTML = '';
+
+    COLOR_NAMES.forEach(cname => {
+      const swatch = document.createElement('div');
+      swatch.className = 'color-swatch';
+      swatch.style.background = COLORS[cname];
+      swatch.title = cname;
+
+      const isMine = setupData[i].color === cname;
+      const isTaken = taken.has(cname) && taken.get(cname) !== i;
+
+      if (isMine) swatch.classList.add('selected');
+      if (isTaken) {
+        swatch.classList.add('taken');
+      } else {
+        swatch.onclick = () => {
+          setupData[i].color = cname;
+          refreshColorPickers();
+        };
+      }
+      picker.appendChild(swatch);
+    });
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// GAME STATE
+// ═══════════════════════════════════════════════════
+
+let G = null; // game state
+
+function startGame() {
+  if (dict.size === 0) {
+    alert('Dictionary not loaded. Please open the game via http://localhost:3456 (run "python3 serve.py" in the Scramble folder first).');
+    return;
+  }
+  const players = [];
+  for (let i = 0; i < numPlayers; i++) {
+    const raw = setupData[i].name.trim().toUpperCase();
+    players.push({
+      name: raw || `P${i+1}`,
+      color: setupData[i].color,
+      score: 0,
+      failStreak: 0,
+      wordsFound: 0,
+    });
+  }
+
+  const cell = boardSize === 5 ? 72 : boardSize === 8 ? 60 : 52;
+  const gridPx = boardSize * cell;
+
+  G = {
+    players,
+    cur: 0,
+    rows: boardSize,
+    cols: boardSize,
+    cell,
+    grid: Array.from({length: boardSize}, () => Array(boardSize).fill(null)),
+    claimed: [],  // {word, path:[{r,c}], pi}
+    timeLeft: TIMER_MAX,
+    interval: null,
+    passCount: 0,
+    lettersLeft: 1,
+    placedThisTurn: 0,
+    mode: 'place',
+    claimStart: null,
+    selLetter: null,
+  };
+
+  // Size grid wrap and SVG overlay dynamically
+  const wrap = document.querySelector('.grid-wrap');
+  wrap.style.width = gridPx + 'px';
+  wrap.style.height = gridPx + 'px';
+  const svg = document.getElementById('svg-overlay');
+  svg.setAttribute('viewBox', `0 0 ${gridPx} ${gridPx}`);
+  svg.style.width = gridPx + 'px';
+  svg.style.height = gridPx + 'px';
+
+  document.getElementById('setup-screen').style.display = 'none';
+  document.getElementById('game-screen').style.display = 'block';
+
+  buildGridDOM();
+  buildKeyboard();
+  redrawSVG();
+  refreshUI();
+  resetTimer();
+  msg(`${G.players[0].name}'s turn — select a letter then click a cell.`, 'info');
+}
+
+// ═══════════════════════════════════════════════════
+// GRID DOM
+// ═══════════════════════════════════════════════════
+
+function buildGridDOM() {
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  grid.style.gridTemplateColumns = `repeat(${G.cols}, ${G.cell}px)`;
+  grid.style.gridTemplateRows = `repeat(${G.rows}, ${G.cell}px)`;
+  const fontSize = G.cell >= 70 ? '3rem' : G.cell >= 60 ? '2.7rem' : '2.4rem';
+  for (let r = 0; r < G.rows; r++) {
+    for (let c = 0; c < G.cols; c++) {
+      const el = document.createElement('div');
+      el.className = 'cell';
+      el.id = `c${r}_${c}`;
+      el.dataset.r = r;
+      el.dataset.c = c;
+      el.style.width = G.cell + 'px';
+      el.style.height = G.cell + 'px';
+      el.style.fontSize = fontSize;
+      el.onclick = () => onCellClick(r, c);
+      el.onmouseenter = () => onCellHover(r, c);
+      grid.appendChild(el);
+    }
+  }
+}
+
+function cellEl(r, c) {
+  return document.getElementById(`c${r}_${c}`);
+}
+
+function refreshCell(r, c) {
+  const el = cellEl(r, c);
+  const data = G.grid[r][c];
+  el.textContent = data ? data.letter : '';
+}
+
+function onCellHover(r, c) {
+  if (G.mode !== 'claim' || !G.claimStart) return;
+  // Clear previous hover highlights
+  document.querySelectorAll('.claim-hover').forEach(e => e.classList.remove('claim-hover'));
+  // Draw hover path
+  const path = getPath(G.claimStart.r, G.claimStart.c, r, c);
+  if (path) path.forEach(p => cellEl(p.r, p.c).classList.add('claim-hover'));
+}
+
+// ═══════════════════════════════════════════════════
+// CELL INTERACTION
+// ═══════════════════════════════════════════════════
+
+function onCellClick(r, c) {
+  if (!G) return;
+  if (G.mode === 'claim') {
+    handleClaimClick(r, c);
+  } else {
+    handlePlaceClick(r, c);
+  }
+}
+
+function handlePlaceClick(r, c) {
+  if (G.lettersLeft <= 0) {
+    msg('Claim a word to earn more letters, or pass.', 'info');
+    return;
+  }
+  if (!G.selLetter) {
+    msg('Select a letter from the keyboard first.', 'info');
+    return;
+  }
+  if (G.grid[r][c] !== null) {
+    msg('That cell is already taken.', 'err');
+    return;
+  }
+
+  G.grid[r][c] = { letter: G.selLetter, pi: G.cur };
+  G.lettersLeft--;
+  G.placedThisTurn++;
+  G.passCount = 0;   // letter placed → reset consecutive-pass counter
+  G.selLetter = null;
+
+  refreshCell(r, c);
+  clearLetterSel();
+  resetTimer();
+
+  if (G.lettersLeft > 0) {
+    msg(`Letter placed! ${G.lettersLeft} more to place — or claim words first.`, 'ok');
+  } else {
+    msg('Letter placed! Claim words to earn bonus placements, or pass.', 'ok');
+  }
+
+  refreshUI();
+}
+
+// ═══════════════════════════════════════════════════
+// CLAIM LOGIC
+// ═══════════════════════════════════════════════════
+
+function toggleClaim() {
+  if (G.mode === 'claim') {
+    G.mode = 'place';
+    G.claimStart = null;
+    clearClaimHighlights();
+  } else {
+    G.mode = 'claim';
+    G.claimStart = null;
+  }
+  refreshUI();
+}
+
+function handleClaimClick(r, c) {
+  if (!G.claimStart) {
+    G.claimStart = { r, c };
+    clearClaimHighlights();
+    cellEl(r, c).classList.add('claim-start');
+    msg('Now click the end cell of the word.', 'info');
+    refreshUI();
+  } else {
+    const s = G.claimStart;
+    G.claimStart = null;
+    clearClaimHighlights();
+    attemptClaim(s.r, s.c, r, c);
+  }
+}
+
+function clearClaimHighlights() {
+  document.querySelectorAll('.claim-start, .claim-hover').forEach(e => {
+    e.classList.remove('claim-start', 'claim-hover');
+  });
+}
+
+function getPath(r1, c1, r2, c2) {
+  if (r1 === r2 && c1 === c2) return null;
+  const dr = r2 - r1, dc = c2 - c1;
+  const absDr = Math.abs(dr), absDc = Math.abs(dc);
+  let stepR, stepC, len;
+
+  if (absDr === 0) {
+    stepR = 0; stepC = dc > 0 ? 1 : -1; len = absDc + 1;
+  } else if (absDc === 0) {
+    stepR = dr > 0 ? 1 : -1; stepC = 0; len = absDr + 1;
+  } else if (absDr === absDc) {
+    stepR = dr > 0 ? 1 : -1; stepC = dc > 0 ? 1 : -1; len = absDr + 1;
+  } else {
+    return null; // not a straight line
+  }
+
+  const path = [];
+  for (let i = 0; i < len; i++) {
+    path.push({ r: r1 + i * stepR, c: c1 + i * stepC });
+  }
+  return path;
+}
+
+function attemptClaim(r1, c1, r2, c2) {
+  const player = G.players[G.cur];
+
+  // Must be different cells
+  if (r1 === r2 && c1 === c2) {
+    msg('Select two different cells.', 'err');
+    return;
+  }
+
+  // Must be straight line
+  const path = getPath(r1, c1, r2, c2);
+  if (!path) {
+    msg('Selection must be in a straight line (row, column, or diagonal).', 'err');
+    return;
+  }
+
+  // Length check (before we count as a fail)
+  if (path.length < minWordLen) {
+    registerFail(player, `Words must be at least ${minWordLen} letters.`);
+    return;
+  }
+
+  // Extract word — all cells must have letters
+  let word = '';
+  for (const p of path) {
+    if (!G.grid[p.r][p.c]) {
+      msg('All cells in the selection must have letters.', 'err');
+      return; // not a fail — user selection error
+    }
+    word += G.grid[p.r][p.c].letter;
+  }
+
+  // Check already-claimed: same word at same cells (either direction) — no fail
+  const pathKey = keyPath(path);
+  const revKey = keyPath([...path].reverse());
+  const duplicate = G.claimed.find(cw => {
+    if (cw.word !== word) return false; // different word on same cells is allowed (DEER/REED)
+    const k = keyPath(cw.path);
+    return k === pathKey || k === revKey;
+  });
+  if (duplicate) {
+    msg(`"${word}" has already been claimed here.`, 'info');
+    return;
+  }
+
+  // Dictionary check (with morphological fallback for inflected forms)
+  if (!isValidWord(word)) {
+    registerFail(player, `"${word}" is not a valid word.`);
+    return;
+  }
+
+  // Banned extension check
+  const bannedBase = checkBannedExtension(word, path);
+  if (bannedBase) {
+    registerFail(player, `"${word}" is just a simple form of "${bannedBase}" — not allowed.`);
+    return;
+  }
+
+  // ─ SUCCESS ─────────────────────────────────────
+  player.score += word.length;
+  player.failStreak = 0;
+  player.wordsFound++;
+  G.lettersLeft++;
+  G.passCount = 0;
+
+  G.claimed.push({ word, path, pi: G.cur });
+  drawLine(path, G.cur);
+  updateWordList();
+  resetTimer();
+
+  // Return to place mode automatically after a successful claim
+  G.mode = 'place';
+  G.claimStart = null;
+  clearClaimHighlights();
+
+  refreshUI();
+  msg(`"${word}" claimed! +${word.length} points  •  ${G.lettersLeft} letter${G.lettersLeft !== 1 ? 's' : ''} to place.`, 'ok');
+}
+
+function keyPath(path) {
+  return path.map(p => `${p.r},${p.c}`).join('|');
+}
+
+function checkBannedExtension(word, path) {
+  for (const cw of G.claimed) {
+    const base = cw.word;
+    if (word.length <= base.length) continue;
+    for (const suf of BANNED_SUFFIXES) {
+      if (word === base + suf) {
+        if (pathStartsWith(path, cw.path) || pathEndsWith(path, cw.path)) {
+          return base;
+        }
+      }
+    }
+  }
+  return null;
+}
+
+function pathStartsWith(long, short) {
+  if (short.length > long.length) return false;
+  for (let i = 0; i < short.length; i++) {
+    if (long[i].r !== short[i].r || long[i].c !== short[i].c) return false;
+  }
+  return true;
+}
+
+function pathEndsWith(long, short) {
+  if (short.length > long.length) return false;
+  const off = long.length - short.length;
+  for (let i = 0; i < short.length; i++) {
+    if (long[off+i].r !== short[i].r || long[off+i].c !== short[i].c) return false;
+  }
+  return true;
+}
+
+function registerFail(player, message) {
+  player.failStreak++;
+  let fullMsg = message;
+  if (player.failStreak >= 3) {
+    player.score--;
+    fullMsg += `  •  Fail streak ${player.failStreak}: −1 point (${player.name}: ${player.score})`;
+  }
+  msg(fullMsg, 'err');
+  refreshUI(); // timer does NOT reset on failed claims
+}
+
+// ═══════════════════════════════════════════════════
+// PASS
+// ═══════════════════════════════════════════════════
+
+function boardFull() {
+  for (let r = 0; r < G.rows; r++)
+    for (let c = 0; c < G.cols; c++)
+      if (!G.grid[r][c]) return false;
+  return true;
+}
+
+function doPass(timedOut = false) {
+  if (!G) return;
+
+  // Confirm if player has letters left and the board still has space
+  if (!timedOut && G.lettersLeft > 0 && !boardFull()) {
+    const n = G.lettersLeft;
+    const ok = confirm(
+      `You still have ${n} letter${n !== 1 ? 's' : ''} to place.\n\nPass anyway and forfeit them?`
+    );
+    if (!ok) return;
+  }
+
+  // Increment pass counter only if no letters placed this turn
+  if (G.placedThisTurn === 0) {
+    G.passCount++;
+  } else {
+    G.passCount = 0;
+  }
+
+  // Reset per-turn state
+  G.lettersLeft = 0;
+  G.selLetter = null;
+  G.mode = 'place';
+  G.claimStart = null;
+  clearClaimHighlights();
+  clearLetterSel();
+
+  // Reset fail streak at end of turn
+  G.players[G.cur].failStreak = 0;
+
+  // Check game-end condition
+  if (G.passCount >= G.players.length * 2) {
+    endGame();
+    return;
+  }
+
+  // Advance player
+  G.cur = (G.cur + 1) % G.players.length;
+  G.lettersLeft = 1;
+  G.placedThisTurn = 0;
+
+  resetTimer();
+  refreshUI();
+  const p = G.players[G.cur];
+  msg(`${p.name}'s turn — select a letter then click a cell.`, 'info');
+}
+
+// ═══════════════════════════════════════════════════
+// TIMER
+// ═══════════════════════════════════════════════════
+
+function resetTimer() {
+  if (G.interval) clearInterval(G.interval);
+  G.timeLeft = TIMER_MAX;
+  updateTimerDOM();
+  G.interval = setInterval(() => {
+    G.timeLeft--;
+    updateTimerDOM();
+    if (G.timeLeft <= 0) {
+      clearInterval(G.interval);
+      G.interval = null;
+      msg("Time's up!", 'err');
+      doPass(true);
+    }
+  }, 1000);
+}
+
+function updateTimerDOM() {
+  const el = document.getElementById('timer-num');
+  const m = Math.floor(G.timeLeft / 60);
+  const s = G.timeLeft % 60;
+  el.textContent = `${m}:${s.toString().padStart(2, '0')}`;
+  el.className = 'timer-number' +
+    (G.timeLeft <= 15 ? ' urgent' : G.timeLeft <= 40 ? ' warn' : '');
+}
+
+// ═══════════════════════════════════════════════════
+// SVG LINES
+// ═══════════════════════════════════════════════════
+
+function drawLine(path, pi) {
+  const svg = document.getElementById('svg-overlay');
+  const color = COLORS[G.players[pi].color];
+  const cs = G.cell;
+  const x1 = path[0].c * cs + cs / 2;
+  const y1 = path[0].r * cs + cs / 2;
+  const x2 = path[path.length-1].c * cs + cs / 2;
+  const y2 = path[path.length-1].r * cs + cs / 2;
+
+  const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  line.setAttribute('x1', x1);
+  line.setAttribute('y1', y1);
+  line.setAttribute('x2', x2);
+  line.setAttribute('y2', y2);
+  line.setAttribute('stroke', color);
+  line.setAttribute('stroke-width', Math.round(G.cell * 0.14));
+  line.setAttribute('stroke-opacity', '0.45');
+  line.setAttribute('stroke-linecap', 'round');
+  svg.appendChild(line);
+}
+
+function redrawSVG() {
+  const svg = document.getElementById('svg-overlay');
+  svg.innerHTML = '';
+  if (!G) return;
+  G.claimed.forEach(cw => drawLine(cw.path, cw.pi));
+}
+
+// ═══════════════════════════════════════════════════
+// KEYBOARD
+// ═══════════════════════════════════════════════════
+
+function buildKeyboard() {
+  const kb = document.getElementById('keyboard');
+  kb.innerHTML = '';
+  for (let i = 0; i < 26; i++) {
+    const letter = String.fromCharCode(65 + i);
+    const btn = document.createElement('div');
+    btn.className = 'lbtn';
+    btn.id = `lbtn-${letter}`;
+    btn.textContent = letter;
+    btn.onclick = () => selectLetter(letter);
+    kb.appendChild(btn);
+  }
+}
+
+function selectLetter(letter) {
+  if (G.mode !== 'place') return;
+  G.selLetter = letter;
+  clearLetterSel();
+  const btn = document.getElementById(`lbtn-${letter}`);
+  if (btn) btn.classList.add('sel');
+}
+
+function clearLetterSel() {
+  document.querySelectorAll('.lbtn').forEach(b => b.classList.remove('sel'));
+}
+
+// Physical keyboard support
+document.addEventListener('keydown', e => {
+  if (!G || G.mode !== 'place') return;
+  const letter = e.key.toUpperCase();
+  if (/^[A-Z]$/.test(letter)) selectLetter(letter);
+});
+
+// ═══════════════════════════════════════════════════
+// UI REFRESH
+// ═══════════════════════════════════════════════════
+
+function refreshUI() {
+  if (!G) return;
+  refreshScores();
+  refreshControls();
+}
+
+function refreshScores() {
+  const panel = document.getElementById('scores-panel');
+  panel.innerHTML = '';
+  G.players.forEach((p, i) => {
+    const row = document.createElement('div');
+    row.className = 'player-row' + (i === G.cur ? ' active' : '');
+    const color = COLORS[p.color];
+    row.innerHTML = `
+      <div class="pdot" style="background:${color}"></div>
+      <div class="pname" style="color:${color}">${p.name}</div>
+      <div class="pscore" style="color:${color}">${p.score}</div>
+      ${i === G.cur ? '<div class="pturn-arrow">▶</div>' : ''}
+    `;
+    panel.appendChild(row);
+  });
+}
+
+function refreshControls() {
+  const p = G.players[G.cur];
+  const color = COLORS[p.color];
+
+  // Coloured border around the board showing whose turn it is
+  document.getElementById('grid').style.border = `4px solid ${color}`;
+
+  const lbl = document.getElementById('turn-label');
+  lbl.textContent = `${p.name}'s turn`;
+  lbl.style.color = color;
+
+  const badge = document.getElementById('mode-badge');
+  const bonusLine = document.getElementById('bonus-line');
+  const btnClaim = document.getElementById('btn-claim');
+  const kb = document.getElementById('keyboard');
+
+  if (G.mode === 'claim') {
+    badge.className = 'mode-badge ' + (G.claimStart ? 'mode-claim-started' : 'mode-claim');
+    badge.textContent = G.claimStart ? 'Click the end cell' : 'Click the start cell';
+    btnClaim.textContent = 'Cancel Claim';
+    kb.style.display = 'none';
+  } else {
+    badge.className = 'mode-badge mode-place';
+    badge.textContent = G.selLetter
+      ? `Placing "${G.selLetter}" — click a cell`
+      : G.lettersLeft > 0 ? 'Select a letter below' : 'Claim a word or pass';
+    btnClaim.textContent = 'Claim Word';
+    kb.style.display = G.lettersLeft > 0 ? 'flex' : 'none';
+  }
+
+  if (G.lettersLeft > 1) {
+    bonusLine.textContent = `${G.lettersLeft} letters remaining to place`;
+    bonusLine.style.display = 'block';
+  } else {
+    bonusLine.style.display = 'none';
+  }
+}
+
+function updateWordList() {
+  const container = document.getElementById('word-list');
+  if (G.claimed.length === 0) {
+    container.innerHTML = '<div class="list-empty">No words yet</div>';
+    return;
+  }
+  container.innerHTML = '';
+  [...G.claimed].reverse().forEach(cw => {
+    const p = G.players[cw.pi];
+    const color = COLORS[p.color];
+    const entry = document.createElement('div');
+    entry.className = 'wentry';
+    entry.innerHTML = `
+      <div class="wdot" style="background:${color}"></div>
+      <span class="wplayer" style="color:${color}">${p.name}</span>
+      <span class="wword">${cw.word}</span>
+    `;
+    container.appendChild(entry);
+  });
+}
+
+function msg(text, type) {
+  const bar = document.getElementById('msg-bar');
+  bar.textContent = text;
+  bar.className = `panel msg-bar msg-${type}`;
+}
+
+// ═══════════════════════════════════════════════════
+// GAME END
+// ═══════════════════════════════════════════════════
+
+function endGame() {
+  if (G.interval) clearInterval(G.interval);
+
+  document.getElementById('game-screen').style.display = 'none';
+  document.getElementById('end-screen').style.display = 'flex';
+
+  const sorted = [...G.players]
+    .map((p, i) => ({ ...p, i }))
+    .sort((a, b) => b.score - a.score);
+
+  const maxScore = sorted[0].score;
+  const container = document.getElementById('final-list');
+  container.innerHTML = '';
+
+  sorted.forEach((p, rank) => {
+    const isWinner = p.score === maxScore;
+    const color = COLORS[p.color];
+    const row = document.createElement('div');
+    row.className = 'final-row';
+    row.innerHTML = `
+      <div class="final-rank">${isWinner ? '🏆' : rank + 1}</div>
+      <div class="pdot" style="background:${color};width:16px;height:16px;border-radius:50%;flex-shrink:0"></div>
+      <div class="final-name" style="color:${color}">${p.name}</div>
+      <div class="final-words" style="margin-right:0.5rem">${p.wordsFound}w</div>
+      <div class="final-score" style="color:${color}">${p.score}</div>
+    `;
+    container.appendChild(row);
+  });
+
+  const total = G.claimed.length;
+  document.getElementById('end-summary').textContent =
+    `${total} word${total !== 1 ? 's' : ''} found across ${G.players.length} players.`;
+}
+
+function backToSetup() {
+  G = null;
+  document.getElementById('end-screen').style.display = 'none';
+  document.getElementById('setup-screen').style.display = 'block';
+  renderPlayerForms();
+}
+
+// ═══════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════
+
+initSetup();
+</script>
+</body>
+</html>
