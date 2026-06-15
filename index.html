@@ -174,7 +174,7 @@ h1 {
   font-size: 1.25rem;
   font-weight: 900;
   cursor: pointer;
-  background: #0c1628;
+  background: var(--tc, #0c1628);
   color: #ffffff;
   text-shadow:
     -2px -2px 0 #0c1628,  2px -2px 0 #0c1628,
@@ -184,7 +184,7 @@ h1 {
   transition: background 0.1s;
   position: relative;
 }
-.cell:hover { background: #152238; }
+.cell:hover { background: var(--tc-hover, #152238) !important; }
 .cell.claim-start { background: rgba(250,204,21,0.35) !important; }
 .cell.claim-hover { background: rgba(125,211,252,0.15); }
 
@@ -439,6 +439,11 @@ h1 {
     <h2>Board Size</h2>
     <div class="count-row" id="board-row"></div>
   </div>
+  <div class="setup-card" id="territory-card" style="display:none">
+    <h2>Territory Mode</h2>
+    <div class="count-row" id="territory-row"></div>
+    <p style="font-size:0.75rem;color:#64748b;margin-top:0.75rem">Claimed letters belong to the claimer — others can't use them.</p>
+  </div>
   <div class="setup-card">
     <h2>Minimum Word Length</h2>
     <div class="count-row" id="minword-row"></div>
@@ -618,6 +623,7 @@ let numPlayers = 2;
 let minWordLen = PLAYER_DEFAULTS[2].minLen;
 let boardSize  = PLAYER_DEFAULTS[2].board;
 let setupData = []; // [{name, color}]
+let territoryMode = false;
 
 function initSetup() {
   buildDict();
@@ -661,6 +667,7 @@ function initSetup() {
       boardSize = n;
       br.querySelectorAll('.count-btn').forEach(btn => btn.classList.remove('selected'));
       b.classList.add('selected');
+      updateTerritoryCardVisibility();
     };
     br.appendChild(b);
   });
@@ -679,6 +686,18 @@ function initSetup() {
       b.classList.add('selected');
     };
     mwr.appendChild(b);
+  });
+
+  // territory buttons
+  const tr = document.getElementById('territory-row');
+  tr.innerHTML = '';
+  [{label:'Off', t:'0'}, {label:'On', t:'1'}].forEach(({label, t}) => {
+    const b = document.createElement('button');
+    b.className = 'count-btn' + (t === '0' ? ' selected' : '');
+    b.textContent = label;
+    b.dataset.t = t;
+    b.onclick = () => setTerritory(t === '1');
+    tr.appendChild(b);
   });
 
   // default player data
@@ -706,6 +725,24 @@ function applyPlayerDefaults(n) {
   document.querySelectorAll('#minword-row .count-btn').forEach(b => {
     b.classList.toggle('selected', parseInt(b.dataset.n) === minWordLen);
   });
+  updateTerritoryCardVisibility();
+}
+
+function setTerritory(on) {
+  territoryMode = on;
+  document.querySelectorAll('#territory-row .count-btn').forEach(b => {
+    b.classList.toggle('selected', b.dataset.t === (on ? '1' : '0'));
+  });
+}
+
+function updateTerritoryCardVisibility() {
+  const card = document.getElementById('territory-card');
+  if (boardSize === 10) {
+    card.style.display = '';
+  } else {
+    card.style.display = 'none';
+    if (territoryMode) setTerritory(false);
+  }
 }
 
 function renderPlayerForms() {
@@ -818,6 +855,10 @@ function startGame() {
     mode: 'place',
     claimStart: null,
     selLetter: null,
+    territoryMode: boardSize === 10 && territoryMode,
+    territory: (boardSize === 10 && territoryMode)
+      ? Array.from({length: boardSize}, () => Array(boardSize).fill(null))
+      : null,
   };
 
   // Size grid wrap and SVG overlay dynamically
@@ -1050,6 +1091,19 @@ function attemptClaim(r1, c1, r2, c2) {
     return;
   }
 
+  // Territory check
+  if (G.territoryMode && G.territory) {
+    const blocker = path.find(({r, c}) => {
+      const owner = G.territory[r][c];
+      return owner !== null && owner !== G.cur;
+    });
+    if (blocker) {
+      const ownerName = G.players[G.territory[blocker.r][blocker.c]].name;
+      registerFail(player, `That word crosses ${ownerName}'s territory.`);
+      return;
+    }
+  }
+
   // ─ SUCCESS ─────────────────────────────────────
   player.score += word.length;
   player.failStreak = 0;
@@ -1059,6 +1113,19 @@ function attemptClaim(r1, c1, r2, c2) {
 
   G.claimed.push({ word, path, pi: G.cur });
   drawLine(path, G.cur);
+
+  // Mark territory and tint cells
+  if (G.territory) {
+    const col = COLORS[G.players[G.cur].color];
+    path.forEach(({r, c}) => {
+      if (G.territory[r][c] === null) {
+        G.territory[r][c] = G.cur;
+        const el = cellEl(r, c);
+        el.style.setProperty('--tc', col + '28');
+        el.style.setProperty('--tc-hover', col + '50');
+      }
+    });
+  }
   updateWordList();
   resetTimer();
 
