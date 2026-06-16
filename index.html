@@ -640,7 +640,7 @@ h1 {
 </div>
 
 <!-- ══ VERSION ══════════════════════════════════════════ -->
-<div style="position:fixed;bottom:6px;right:10px;font-size:0.65rem;color:rgba(255,255,255,0.15);pointer-events:none;user-select:none">v1.1.0</div>
+<div style="position:fixed;bottom:6px;right:10px;font-size:0.65rem;color:rgba(255,255,255,0.15);pointer-events:none;user-select:none">v1.1.1</div>
 
 <!-- ══ END ═════════════════════════════════════════════ -->
 <div id="end-screen">
@@ -959,6 +959,7 @@ function refreshColorPickers() {
 let G = null; // game state
 
 function startGame() {
+  if (G && G.interval) clearInterval(G.interval);
   if (dict.size === 0) {
     alert('Dictionary not loaded. Please open the game via http://localhost:3456 (run "python3 serve.py" in the Word Gridlock folder first).');
     return;
