@@ -446,6 +446,87 @@ h1 {
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+
+/* ── MOBILE HEADER (hidden on desktop) ────────── */
+.mob-hdr {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem 0.25rem;
+  width: 100%;
+}
+.mob-title {
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: 0.2em;
+  color: #a78bfa;
+  text-transform: uppercase;
+}
+.mob-timer-num {
+  font-size: 1.8rem;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  color: #e2e8f0;
+  line-height: 1;
+  transition: color 0.3s;
+}
+.mob-timer-num.warn   { color: #f59e0b; }
+.mob-timer-num.urgent { color: #ef4444; animation: blink 0.6s step-end infinite; }
+
+/* ── MOBILE LAYOUT ────────────────────────────── */
+@media (max-width: 600px) {
+  h1 { display: none; }
+  .mob-hdr { display: flex; }
+
+  #game-screen { padding: 0 4px 1rem; }
+
+  .game-layout {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  /* Board fills nearly full width — actual px set by JS via isMobile check */
+  .grid-wrap { flex-shrink: 0; }
+
+  /* Side panel becomes full-width below the board */
+  .side {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+  }
+
+  /* Hide desktop timer — shown in mob-hdr instead */
+  .timer-wrap { display: none !important; }
+
+  /* Reorder side panels for mobile */
+  #controls-panel { order: 1; }
+  #keyboard       { order: 2; }
+  #msg-bar        { order: 3; }
+  #scores-panel   { order: 4; }
+  #wordlist-panel { order: 5; }
+
+  /* Bigger touch-friendly buttons */
+  .btn {
+    flex: 1;
+    padding: 0.8rem 0.5rem;
+    font-size: 1rem;
+    min-height: 44px;
+  }
+
+  /* Keyboard: centred, taller keys for touch */
+  .keyboard { justify-content: center; gap: 4px; }
+  .lbtn { width: 32px; height: 42px; font-size: 0.85rem; }
+
+  /* Compact player rows in scores panel */
+  .player-row { padding: 0.3rem 0.5rem; }
+  .pscore { font-size: 1rem; }
+  .ptiles { font-size: 0.7rem; min-width: 26px; }
+
+  /* Setup screen: tighter padding on small screens */
+  #setup-screen { padding: 0.75rem 0.75rem 2rem; }
+  .setup-card { padding: 1rem 1rem; }
+}
 </style>
 </head>
 <body>
@@ -481,6 +562,13 @@ h1 {
 
 <!-- ══ GAME ════════════════════════════════════════════ -->
 <div id="game-screen">
+
+  <!-- Mobile-only header: title + timer on one line -->
+  <div class="mob-hdr">
+    <span class="mob-title">Word Gridlock</span>
+    <span id="mob-timer" class="mob-timer-num">2:00</span>
+  </div>
+
   <div class="game-layout">
 
     <!-- Grid -->
@@ -503,7 +591,7 @@ h1 {
       <div class="panel" id="scores-panel"></div>
 
       <!-- Controls -->
-      <div class="panel">
+      <div class="panel" id="controls-panel">
         <div class="turn-label" id="turn-label"></div>
         <div class="mode-badge mode-place" id="mode-badge">Place mode — select a letter</div>
         <div class="bonus-line" id="bonus-line" style="display:none"></div>
@@ -520,7 +608,7 @@ h1 {
       <div class="panel keyboard" id="keyboard"></div>
 
       <!-- Word list -->
-      <div class="panel">
+      <div class="panel" id="wordlist-panel">
         <div class="section-label">Claimed Words</div>
         <div class="wordlist-scroll" id="word-list">
           <div class="list-empty">No words yet</div>
@@ -872,7 +960,10 @@ function startGame() {
     return;
   }
 
-  const cell = boardSize === 5 ? 72 : boardSize === 8 ? 60 : 52;
+  const isMob = window.innerWidth <= 600;
+  const cell = isMob
+    ? Math.floor((window.innerWidth - 8) / boardSize)
+    : boardSize === 5 ? 72 : boardSize === 8 ? 60 : 52;
   const gridPx = boardSize * cell;
 
   G = {
@@ -933,7 +1024,7 @@ function buildGridDOM() {
   grid.innerHTML = '';
   grid.style.gridTemplateColumns = `repeat(${G.cols}, ${G.cell}px)`;
   grid.style.gridTemplateRows = `repeat(${G.rows}, ${G.cell}px)`;
-  const fontSize = G.cell >= 70 ? '3rem' : G.cell >= 60 ? '2.7rem' : '2.4rem';
+  const fontSize = G.cell >= 70 ? '3rem' : G.cell >= 60 ? '2.7rem' : G.cell >= 48 ? '2.4rem' : G.cell >= 40 ? '1.8rem' : G.cell >= 32 ? '1.3rem' : '1rem';
   for (let r = 0; r < G.rows; r++) {
     for (let c = 0; c < G.cols; c++) {
       const el = document.createElement('div');
@@ -1326,12 +1417,15 @@ function resetTimer() {
 }
 
 function updateTimerDOM() {
-  const el = document.getElementById('timer-num');
   const m = Math.floor(G.timeLeft / 60);
   const s = G.timeLeft % 60;
-  el.textContent = `${m}:${s.toString().padStart(2, '0')}`;
-  el.className = 'timer-number' +
-    (G.timeLeft <= 15 ? ' urgent' : G.timeLeft <= 40 ? ' warn' : '');
+  const text = `${m}:${s.toString().padStart(2, '0')}`;
+  const state = G.timeLeft <= 15 ? ' urgent' : G.timeLeft <= 40 ? ' warn' : '';
+  const el = document.getElementById('timer-num');
+  el.textContent = text;
+  el.className = 'timer-number' + state;
+  const mob = document.getElementById('mob-timer');
+  if (mob) { mob.textContent = text; mob.className = 'mob-timer-num' + state; }
 }
 
 // ═══════════════════════════════════════════════════
