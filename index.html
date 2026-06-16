@@ -49,7 +49,7 @@ h1 {
   margin-bottom: 1rem;
 }
 
-.count-row { display: flex; gap: 0.6rem; }
+.count-row { display: flex; gap: 0.6rem; flex-wrap: wrap; }
 
 .count-btn {
   padding: 0.5rem 1.4rem;
@@ -142,7 +142,8 @@ h1 {
 .diff-opt.active { background: #334155; color: #e2e8f0; }
 .diff-opt:not(.active):hover { background: #1e293b; color: #94a3b8; }
 
-.color-picker { display: flex; gap: 5px; flex-wrap: wrap; flex: 1; }
+.bot-name-label { font-size: 0.95rem; font-weight: bold; color: #e2e8f0; letter-spacing: 0.05em; padding: 0.4rem 0.6rem; background: #1e293b; border: 2px solid #334155; border-radius: 6px; flex-shrink: 0; }
+.color-picker { display: grid; grid-template-columns: repeat(3, 26px); gap: 4px; margin-left: auto; }
 
 .color-swatch {
   width: 26px;
@@ -317,6 +318,8 @@ h1 {
   text-align: right;
   min-width: 32px;
 }
+.ptiles-big { font-size: 1.25rem; font-weight: 900; text-align: right; min-width: 32px; }
+.pscore-small { font-size: 0.75rem; font-weight: 600; color: #64748b; text-align: right; min-width: 32px; }
 
 /* Controls */
 .turn-label {
@@ -728,7 +731,7 @@ h1 {
 </div>
 
 <!-- ══ VERSION ══════════════════════════════════════════ -->
-<div style="position:fixed;bottom:6px;right:10px;font-size:0.65rem;color:rgba(255,255,255,0.15);pointer-events:none;user-select:none">v1.1.8</div>
+<div style="position:fixed;bottom:6px;right:10px;font-size:0.65rem;color:rgba(255,255,255,0.15);pointer-events:none;user-select:none">v1.1.14</div>
 
 <!-- ══ END ═════════════════════════════════════════════ -->
 <div id="end-screen">
@@ -949,25 +952,19 @@ function renderPlayerForms() {
   const container = document.getElementById('player-forms');
   container.innerHTML = '';
 
+  const totalBots = setupData.slice(0, numPlayers).filter(s => s.isBot).length;
+  let botIdx = 0;
+
   for (let i = 0; i < numPlayers; i++) {
     const isBot = setupData[i].isBot;
     const diff  = setupData[i].botDifficulty;
+    if (isBot) botIdx++;
+    const botName = totalBots === 1 ? 'BOT' : `BOT${botIdx}`;
 
     const row = document.createElement('div');
     row.className = 'pform';
 
-    // Name input — human only
-    if (!isBot) {
-      const input = document.createElement('input');
-      input.type = 'text';
-      input.maxLength = 10;
-      input.placeholder = `Player ${i + 1}`;
-      input.value = setupData[i].name;
-      input.oninput = () => { setupData[i].name = input.value.toUpperCase(); };
-      row.appendChild(input);
-    }
-
-    // Human / Bot pill toggle
+    // Human / Bot pill toggle — always first on left
     const toggle = document.createElement('div');
     toggle.className = 'player-toggle';
 
@@ -987,8 +984,13 @@ function renderPlayerForms() {
     toggle.appendChild(botOpt);
     row.appendChild(toggle);
 
-    // Easy / Hard difficulty toggle — bot only
+    // Middle: name input (human) or bot name + Easy/Hard toggle (bot)
     if (isBot) {
+      const nameLabel = document.createElement('span');
+      nameLabel.className = 'bot-name-label';
+      nameLabel.textContent = botName;
+      row.appendChild(nameLabel);
+
       const diffToggle = document.createElement('div');
       diffToggle.className = 'diff-toggle';
       ['easy', 'hard'].forEach(d => {
@@ -1000,9 +1002,17 @@ function renderPlayerForms() {
         diffToggle.appendChild(opt);
       });
       row.appendChild(diffToggle);
+    } else {
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.maxLength = 10;
+      input.placeholder = `Player ${i + 1}`;
+      input.value = setupData[i].name;
+      input.oninput = () => { setupData[i].name = input.value.toUpperCase(); };
+      row.appendChild(input);
     }
 
-    // Color picker
+    // Color picker — floated right, 2 rows of 3
     const picker = document.createElement('div');
     picker.className = 'color-picker';
     picker.id = `cp-${i}`;
@@ -1117,6 +1127,7 @@ function startGame() {
   const wrap = document.querySelector('.grid-wrap');
   wrap.style.width = gridPx + 'px';
   wrap.style.height = gridPx + 'px';
+  document.querySelector('.board-col').style.width = gridPx + 'px';
   const svg = document.getElementById('svg-overlay');
   svg.setAttribute('viewBox', `0 0 ${gridPx} ${gridPx}`);
   svg.style.width = gridPx + 'px';
@@ -1636,7 +1647,10 @@ function clearLetterSel() {
 
 // Physical keyboard support
 document.addEventListener('keydown', e => {
-  if (!G || G.aiRunning || G.mode !== 'place') return;
+  if (!G || G.aiRunning) return;
+  if (e.key === ' ' || e.key === 'Spacebar') { e.preventDefault(); toggleClaim(); return; }
+  if (e.key === 'Enter') { e.preventDefault(); doPass(); return; }
+  if (G.mode !== 'place') return;
   const letter = e.key.toUpperCase();
   if (/^[A-Z]$/.test(letter)) selectLetter(letter);
 });
@@ -1671,8 +1685,7 @@ function refreshScores() {
     row.innerHTML = `
       <div class="pdot" style="background:${color}"></div>
       <div class="pname" style="color:${color}">${p.name}</div>
-      ${tileCounts ? `<div class="ptiles" style="color:${color}">${tileCounts[i]}t</div>` : ''}
-      <div class="pscore" style="color:${color}">${p.score}</div>
+      ${tileCounts ? `<div class="ptiles-big" style="color:${color}">${tileCounts[i]}</div><div class="pscore-small">${p.score}pts</div>` : `<div class="pscore" style="color:${color}">${p.score}</div>`}
       ${i === G.cur ? '<div class="pturn-arrow">▶</div>' : ''}
     `;
     panel.appendChild(row);
