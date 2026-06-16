@@ -80,44 +80,67 @@ h1 {
   background: #0f172a;
   border-radius: 8px;
 }
-.pform-cpu-btn {
-  padding: 0.35rem 0.75rem;
-  border: 2px solid #334155;
-  border-radius: 6px;
-  background: transparent;
-  color: #94a3b8;
-  font-size: 0.8rem;
-  font-weight: bold;
-  cursor: pointer;
-}
-.pform-cpu-btn.selected {
-  border-color: #7c3aed;
-  color: #c4b5fd;
-  background: rgba(124,58,237,0.15);
-}
-
-.pform-label {
-  color: #64748b;
-  font-size: 0.85rem;
-  width: 52px;
-  flex-shrink: 0;
-}
-
 .pform input {
   background: #1e293b;
   border: 2px solid #334155;
   color: white;
-  padding: 0.4rem 0.5rem;
+  padding: 0.4rem 0.6rem;
   border-radius: 6px;
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: bold;
-  width: 64px;
-  text-align: center;
+  flex: 1;
+  min-width: 80px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
-
 .pform input:focus { outline: none; border-color: #7c3aed; }
+
+/* Human / Bot pill toggle */
+.player-toggle {
+  display: flex;
+  background: #0f172a;
+  border: 2px solid #334155;
+  border-radius: 20px;
+  padding: 2px;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.toggle-opt {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 28px;
+  border-radius: 18px;
+  cursor: pointer;
+  color: #475569;
+  transition: background 0.15s, color 0.15s;
+}
+.toggle-opt.active { background: #7c3aed; color: #e2e8f0; }
+.toggle-opt:not(.active):hover { color: #94a3b8; }
+
+/* Easy / Hard pill toggle */
+.diff-toggle {
+  display: flex;
+  background: #0f172a;
+  border: 2px solid #334155;
+  border-radius: 6px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.diff-opt {
+  padding: 0.28rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: bold;
+  cursor: pointer;
+  color: #475569;
+  transition: background 0.15s, color 0.15s;
+  border: none;
+  background: transparent;
+}
+.diff-opt + .diff-opt { border-left: 1px solid #334155; }
+.diff-opt.active { background: #334155; color: #e2e8f0; }
+.diff-opt:not(.active):hover { background: #1e293b; color: #94a3b8; }
 
 .color-picker { display: flex; gap: 5px; flex-wrap: wrap; flex: 1; }
 
@@ -705,7 +728,7 @@ h1 {
 </div>
 
 <!-- ══ VERSION ══════════════════════════════════════════ -->
-<div style="position:fixed;bottom:6px;right:10px;font-size:0.65rem;color:rgba(255,255,255,0.15);pointer-events:none;user-select:none">v1.1.7</div>
+<div style="position:fixed;bottom:6px;right:10px;font-size:0.65rem;color:rgba(255,255,255,0.15);pointer-events:none;user-select:none">v1.1.8</div>
 
 <!-- ══ END ═════════════════════════════════════════════ -->
 <div id="end-screen">
@@ -732,6 +755,9 @@ const COLOR_NAMES = Object.keys(COLORS);
 
 const TIMER_MAX = 120;
 const BANNED_SUFFIXES = ['ING', 'ES', 'ED', 'S', 'D'];
+
+const ICON_HUMAN = `<svg viewBox="0 0 16 16" width="15" height="15" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><circle cx="8" cy="5" r="2.8"/><path d="M2 15c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5" fill="currentColor"/></svg>`;
+const ICON_BOT   = `<svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg"><rect x="2.5" y="6" width="11" height="8" rx="1.5"/><circle cx="5.5" cy="10" r="1.2" fill="currentColor" stroke="none"/><circle cx="10.5" cy="10" r="1.2" fill="currentColor" stroke="none"/><line x1="8" y1="2.5" x2="8" y2="6"/><circle cx="8" cy="2" r="0.8" fill="currentColor" stroke="none"/></svg>`;
 
 // ═══════════════════════════════════════════════════
 // DICTIONARY
@@ -930,53 +956,58 @@ function renderPlayerForms() {
     const row = document.createElement('div');
     row.className = 'pform';
 
-    const picker = document.createElement('div');
-    picker.className = 'color-picker';
-    picker.id = `cp-${i}`;
-
-    if (isBot) {
-      // "Human" button replaces the label — clicking it switches back to human
-      const humanBtn = document.createElement('button');
-      humanBtn.className = 'pform-cpu-btn';
-      humanBtn.textContent = 'Human';
-      humanBtn.onclick = () => { setupData[i].isBot = false; renderPlayerForms(); };
-
-      // Easy / Medium difficulty buttons
-      const diffRow = document.createElement('div');
-      diffRow.style.cssText = 'display:flex;gap:0.4rem;flex:1';
-      ['easy','medium'].forEach(d => {
-        const b = document.createElement('button');
-        b.className = 'pform-cpu-btn' + (diff === d ? ' selected' : '');
-        b.textContent = d === 'easy' ? 'BOT Easy' : 'BOT Medium';
-        b.onclick = () => { setupData[i].botDifficulty = d; renderPlayerForms(); };
-        diffRow.appendChild(b);
-      });
-
-      row.appendChild(humanBtn);
-      row.appendChild(diffRow);
-    } else {
-      const label = document.createElement('div');
-      label.className = 'pform-label';
-      label.textContent = `Player ${i + 1}`;
-
+    // Name input — human only
+    if (!isBot) {
       const input = document.createElement('input');
       input.type = 'text';
       input.maxLength = 10;
-      input.placeholder = `P${i+1}`;
+      input.placeholder = `Player ${i + 1}`;
       input.value = setupData[i].name;
       input.oninput = () => { setupData[i].name = input.value.toUpperCase(); };
-
-      const cpuBtn = document.createElement('button');
-      cpuBtn.className = 'pform-cpu-btn';
-      cpuBtn.textContent = 'BOT';
-      cpuBtn.onclick = () => { setupData[i].isBot = true; renderPlayerForms(); };
-
-      row.appendChild(label);
       row.appendChild(input);
-      row.appendChild(cpuBtn);
     }
 
+    // Human / Bot pill toggle
+    const toggle = document.createElement('div');
+    toggle.className = 'player-toggle';
+
+    const humanOpt = document.createElement('div');
+    humanOpt.className = 'toggle-opt' + (!isBot ? ' active' : '');
+    humanOpt.innerHTML = ICON_HUMAN;
+    humanOpt.title = 'Human';
+    humanOpt.onclick = () => { setupData[i].isBot = false; renderPlayerForms(); };
+
+    const botOpt = document.createElement('div');
+    botOpt.className = 'toggle-opt' + (isBot ? ' active' : '');
+    botOpt.innerHTML = ICON_BOT;
+    botOpt.title = 'Bot';
+    botOpt.onclick = () => { setupData[i].isBot = true; renderPlayerForms(); };
+
+    toggle.appendChild(humanOpt);
+    toggle.appendChild(botOpt);
+    row.appendChild(toggle);
+
+    // Easy / Hard difficulty toggle — bot only
+    if (isBot) {
+      const diffToggle = document.createElement('div');
+      diffToggle.className = 'diff-toggle';
+      ['easy', 'hard'].forEach(d => {
+        const opt = document.createElement('div');
+        const isActive = diff === d || (d === 'hard' && diff === 'medium');
+        opt.className = 'diff-opt' + (isActive ? ' active' : '');
+        opt.textContent = d === 'easy' ? 'Easy' : 'Hard';
+        opt.onclick = () => { setupData[i].botDifficulty = d; renderPlayerForms(); };
+        diffToggle.appendChild(opt);
+      });
+      row.appendChild(diffToggle);
+    }
+
+    // Color picker
+    const picker = document.createElement('div');
+    picker.className = 'color-picker';
+    picker.id = `cp-${i}`;
     row.appendChild(picker);
+
     container.appendChild(row);
   }
 
