@@ -654,7 +654,7 @@ h1 {
 </div>
 
 <!-- ══ VERSION ══════════════════════════════════════════ -->
-<div style="position:fixed;bottom:6px;right:10px;font-size:0.65rem;color:rgba(255,255,255,0.15);pointer-events:none;user-select:none">v1.1.5</div>
+<div style="position:fixed;bottom:6px;right:10px;font-size:0.65rem;color:rgba(255,255,255,0.15);pointer-events:none;user-select:none">v1.1.6</div>
 
 <!-- ══ END ═════════════════════════════════════════════ -->
 <div id="end-screen">
@@ -1744,6 +1744,7 @@ function restartGame() {
 }
 
 function backToSetup() {
+  if (G && G.interval) clearInterval(G.interval);
   G = null;
   document.getElementById('end-screen').style.display = 'none';
   document.getElementById('game-screen').style.display = 'none';
