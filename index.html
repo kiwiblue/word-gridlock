@@ -457,6 +457,8 @@ h1 {
   transition: border-color 0.15s, color 0.15s, background 0.15s;
 }
 .btn-restart:hover { border-color: #7f1d1d; color: #fca5a5; background: rgba(127,29,29,0.15); }
+.btn-home { border-color: #1e3a5f; color: #334155; margin-top: 0.3rem; }
+.btn-home:hover { border-color: #3b82f6; color: #93c5fd; background: rgba(59,130,246,0.1); }
 
 /* scrollbar */
 ::-webkit-scrollbar { width: 5px; }
@@ -522,6 +524,7 @@ h1 {
   #scores-panel   { order: 4; }
   #wordlist-panel { order: 5; }
   #restart-btn    { order: 6; }
+  .btn-home       { order: 7; }
 
   /* Bigger touch-friendly buttons */
   .btn {
@@ -632,15 +635,16 @@ h1 {
         </div>
       </div>
 
-      <!-- Restart -->
+      <!-- Restart / Home -->
       <button class="btn-restart" id="restart-btn" onclick="restartGame()">Restart Game</button>
+      <button class="btn-restart btn-home" onclick="backToSetup()">Back to Home</button>
 
     </div>
   </div>
 </div>
 
 <!-- ══ VERSION ══════════════════════════════════════════ -->
-<div style="position:fixed;bottom:6px;right:10px;font-size:0.65rem;color:rgba(255,255,255,0.15);pointer-events:none;user-select:none">v1.1.1</div>
+<div style="position:fixed;bottom:6px;right:10px;font-size:0.65rem;color:rgba(255,255,255,0.15);pointer-events:none;user-select:none">v1.1.2</div>
 
 <!-- ══ END ═════════════════════════════════════════════ -->
 <div id="end-screen">
