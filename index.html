@@ -475,6 +475,49 @@ h1 {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
 
+/* ── BOARD COLUMN ─────────────────────────────── */
+.board-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+/* ── GAME INFO PANEL ───────────────────────────── */
+.game-info-panel {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 0.7rem 1rem;
+  font-size: 0.8rem;
+  color: #64748b;
+  line-height: 1.5;
+}
+.game-info-panel:empty { display: none; }
+.info-tags {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.35rem;
+}
+.info-tag {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 4px;
+  padding: 0.18rem 0.5rem;
+  font-size: 0.72rem;
+  font-weight: bold;
+  color: #94a3b8;
+  letter-spacing: 0.03em;
+}
+.info-desc {
+  font-size: 0.77rem;
+  color: #475569;
+}
+
+/* hide mobile copy on desktop */
+#game-info-mob { display: none; }
+
 /* ── MOBILE HEADER (hidden on desktop) ────────── */
 .mob-hdr {
   display: none;
@@ -533,8 +576,10 @@ h1 {
   #msg-bar        { order: 3; }
   #scores-panel   { order: 4; }
   #wordlist-panel { order: 5; }
-  #restart-btn    { order: 6; }
-  .btn-home       { order: 7; }
+  #game-info-mob  { order: 6; display: block; }
+  #restart-btn    { order: 7; }
+  .btn-home       { order: 8; }
+  #game-info      { display: none; }
 
   /* Bigger touch-friendly buttons */
   .btn {
@@ -601,11 +646,14 @@ h1 {
 
   <div class="game-layout">
 
-    <!-- Grid -->
-    <div class="grid-wrap">
-      <div id="grid"></div>
-      <svg class="svg-overlay" id="svg-overlay"
-           viewBox="0 0 520 520" xmlns="http://www.w3.org/2000/svg"></svg>
+    <!-- Grid + info below (desktop) -->
+    <div class="board-col">
+      <div class="grid-wrap">
+        <div id="grid"></div>
+        <svg class="svg-overlay" id="svg-overlay"
+             viewBox="0 0 520 520" xmlns="http://www.w3.org/2000/svg"></svg>
+      </div>
+      <div id="game-info" class="game-info-panel"></div>
     </div>
 
     <!-- Side panel -->
@@ -645,6 +693,9 @@ h1 {
         </div>
       </div>
 
+      <!-- Game info (mobile only) -->
+      <div id="game-info-mob" class="game-info-panel"></div>
+
       <!-- Restart / Home -->
       <button class="btn-restart" id="restart-btn" onclick="restartGame()">Restart Game</button>
       <button class="btn-restart btn-home" onclick="backToSetup()">Back to Home</button>
@@ -654,7 +705,7 @@ h1 {
 </div>
 
 <!-- ══ VERSION ══════════════════════════════════════════ -->
-<div style="position:fixed;bottom:6px;right:10px;font-size:0.65rem;color:rgba(255,255,255,0.15);pointer-events:none;user-select:none">v1.1.6</div>
+<div style="position:fixed;bottom:6px;right:10px;font-size:0.65rem;color:rgba(255,255,255,0.15);pointer-events:none;user-select:none">v1.1.7</div>
 
 <!-- ══ END ═════════════════════════════════════════════ -->
 <div id="end-screen">
@@ -1045,6 +1096,7 @@ function startGame() {
 
   buildGridDOM();
   buildKeyboard();
+  buildGameInfo();
   redrawSVG();
   refreshUI();
   resetTimer();
@@ -1519,6 +1571,24 @@ function buildKeyboard() {
     btn.onclick = () => selectLetter(letter);
     kb.appendChild(btn);
   }
+}
+
+function buildGameInfo() {
+  const modeLabel = { off: 'Standard', exclusive: 'Exclusive', conquest: 'Conquest' }[G.territoryMode];
+  const modeDesc = {
+    exclusive: 'Claimed tiles are locked to their owner — others cannot use them. Most tiles at game end wins.',
+    conquest:  'Claiming a word steals all its tiles. Most tiles at game end wins. Unclaimed tiles go to the points leader.',
+  }[G.territoryMode] || '';
+
+  const tags = [
+    `${G.rows}×${G.cols} board`,
+    `Min ${minWordLen} letter${minWordLen !== 1 ? 's' : ''}`,
+    modeLabel,
+  ].map(t => `<span class="info-tag">${t}</span>`).join('');
+
+  const html = `<div class="info-tags">${tags}</div>${modeDesc ? `<div class="info-desc">${modeDesc}</div>` : ''}`;
+  document.getElementById('game-info').innerHTML = html;
+  document.getElementById('game-info-mob').innerHTML = html;
 }
 
 function selectLetter(letter) {
