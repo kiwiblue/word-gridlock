@@ -172,11 +172,21 @@ h1 {
   flex-shrink: 0;
 }
 
+/* Border overlay rendered above cells so it's never covered */
+.grid-wrap::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 4px var(--player-color, #334155);
+  z-index: 2;
+  transition: box-shadow 0.2s;
+}
+
 #grid {
   display: grid;
   grid-template-columns: repeat(10, 52px);
   grid-template-rows: repeat(10, 52px);
-  box-shadow: inset 0 0 0 2px #334155;
   user-select: none;
 }
 
@@ -644,7 +654,7 @@ h1 {
 </div>
 
 <!-- ══ VERSION ══════════════════════════════════════════ -->
-<div style="position:fixed;bottom:6px;right:10px;font-size:0.65rem;color:rgba(255,255,255,0.15);pointer-events:none;user-select:none">v1.1.4</div>
+<div style="position:fixed;bottom:6px;right:10px;font-size:0.65rem;color:rgba(255,255,255,0.15);pointer-events:none;user-select:none">v1.1.5</div>
 
 <!-- ══ END ═════════════════════════════════════════════ -->
 <div id="end-screen">
@@ -1573,7 +1583,7 @@ function refreshControls() {
   const color = COLORS[p.color];
 
   // Coloured border around the board showing whose turn it is
-  document.getElementById('grid').style.boxShadow = `inset 0 0 0 4px ${color}`;
+  document.querySelector('.grid-wrap').style.setProperty('--player-color', color);
 
   const lbl = document.getElementById('turn-label');
   lbl.textContent = `${p.name}'s turn`;
