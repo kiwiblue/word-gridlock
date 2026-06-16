@@ -438,7 +438,7 @@ h1 {
   align-items: center;
   padding: 2rem 1.5rem;
   width: 100%;
-  max-width: 500px;
+  max-width: 600px;
 }
 
 #end-screen h2 {
@@ -731,7 +731,7 @@ h1 {
 </div>
 
 <!-- ══ VERSION ══════════════════════════════════════════ -->
-<div style="position:fixed;bottom:6px;right:10px;font-size:0.65rem;color:rgba(255,255,255,0.15);pointer-events:none;user-select:none">v1.1.20</div>
+<div style="position:fixed;bottom:6px;right:10px;font-size:0.65rem;color:rgba(255,255,255,0.15);pointer-events:none;user-select:none">v1.1.26</div>
 
 <!-- ══ END ═════════════════════════════════════════════ -->
 <div id="end-screen">
@@ -739,6 +739,7 @@ h1 {
   <div id="final-list" style="width:100%"></div>
   <p id="end-summary" style="color:#64748b;margin-top:0.75rem;font-size:0.9rem"></p>
   <button class="btn-again" onclick="backToSetup()">Play Again</button>
+  <div id="end-board" style="margin-top:1.5rem;pointer-events:none"></div>
 </div>
 
 <script>
@@ -1104,10 +1105,6 @@ function startGame() {
       isBot,
       botDifficulty: diff,
     });
-  }
-  if (players.every(p => p.isBot)) {
-    alert('At least one player must be human.');
-    return;
   }
 
   const isMob = window.innerWidth <= 600;
@@ -1693,7 +1690,10 @@ function refreshScores() {
     const color = COLORS[p.color];
     row.innerHTML = `
       <div class="pdot" style="background:${color}"></div>
-      <div class="pname" style="color:${color}">${p.name}</div>
+      <div style="flex:1;display:flex;align-items:center;gap:0.4rem">
+        <div class="pname" style="color:${color};flex:none">${p.name}</div>
+        ${p.isBot ? `<div class="pscore-small">${p.botDifficulty}</div>` : ''}
+      </div>
       ${tileCounts ? `<div class="ptiles-big" style="color:${color}">${tileCounts[i]}</div><div class="pscore-small">${p.score}pts</div>` : `<div class="pscore" style="color:${color}">${p.score}</div>`}
       ${i === G.cur ? '<div class="pturn-arrow">▶</div>' : ''}
     `;
@@ -1860,6 +1860,13 @@ function endGame() {
     document.getElementById('end-summary').textContent =
       `${total} word${total !== 1 ? 's' : ''} found across ${G.players.length} players.`;
   }
+
+  // Clone the finished board into the end screen
+  const endBoard = document.getElementById('end-board');
+  endBoard.innerHTML = '';
+  const boardClone = document.querySelector('.grid-wrap').cloneNode(true);
+  boardClone.style.pointerEvents = 'none';
+  endBoard.appendChild(boardClone);
 }
 
 function restartGame() {
@@ -1920,12 +1927,13 @@ function findAllBotWords() {
 function chooseBotWord(words, difficulty) {
   if (!words.length) return null;
   if (difficulty === 'easy') {
-    if (Math.random() < 0.25) return null; // miss a word 25% of the time
-    const short = words.filter(w => w.score <= 5);
-    const pool = short.length ? short : words;
-    return pool[Math.floor(Math.random() * pool.length)];
+    if (Math.random() < 0.6) return null; // miss 60% of the time
+    // Only notice the shortest words (exactly minWordLen) — humans find longer ones first
+    const shortest = words.filter(w => w.score === minWordLen);
+    if (!shortest.length) return null;
+    return shortest[Math.floor(Math.random() * shortest.length)];
   }
-  // medium: prefer 5+ letter words to avoid obscure short words
+  // Hard: prefer 5+ letter words
   const long = words.filter(w => w.score >= 5);
   const pool = long.length ? long : words;
   return pool.reduce((best, w) => w.score > best.score ? w : best, pool[0]);
@@ -1945,13 +1953,7 @@ function chooseBotPlacement(difficulty) {
   }
   if (!empty.length) return null;
 
-  if (difficulty === 'easy') {
-    const pool = adjacent.length ? adjacent : empty;
-    const cell = pool[Math.floor(Math.random() * pool.length)];
-    return { ...cell, letter: BOT_LETTERS[Math.floor(Math.random() * BOT_LETTERS.length)] };
-  }
-
-  // Medium: try candidate cells × common letters, pick combo enabling most words
+  // Both difficulties: try candidate cells × common letters, pick combo enabling most words
   const candidates = adjacent.length ? adjacent : empty;
   const sample = candidates.length > 12
     ? [...candidates].sort(() => Math.random() - 0.5).slice(0, 12)
@@ -1980,6 +1982,7 @@ function chooseBotPlacement(difficulty) {
 function scheduleBotTurn() {
   if (!G || G.aiRunning) return;
   G.aiRunning = true;
+  refreshUI();
   setTimeout(runBotTurn, 900);
 }
 
