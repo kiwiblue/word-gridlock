@@ -1131,7 +1131,9 @@ function attemptClaim(r1, c1, r2, c2) {
   // Banned extension check
   const bannedBase = checkBannedExtension(word, path);
   if (bannedBase) {
-    registerFail(player, `"${word}" is just a simple form of "${bannedBase}" — not allowed.`);
+    const shorter = word.length < bannedBase.length ? word : bannedBase;
+    const longer  = word.length < bannedBase.length ? bannedBase : word;
+    registerFail(player, `"${longer}" is already claimed — "${shorter}" is just a shorter form of it.`);
     return;
   }
 
@@ -1189,11 +1191,22 @@ function keyPath(path) {
 function checkBannedExtension(word, path) {
   for (const cw of G.claimed) {
     const base = cw.word;
-    if (word.length <= base.length) continue;
-    for (const suf of BANNED_SUFFIXES) {
-      if (word === base + suf) {
-        if (pathStartsWith(path, cw.path) || pathEndsWith(path, cw.path)) {
-          return base;
+    if (word.length > base.length) {
+      // new word is longer — block DOGS after DOG
+      for (const suf of BANNED_SUFFIXES) {
+        if (word === base + suf) {
+          if (pathStartsWith(path, cw.path) || pathEndsWith(path, cw.path)) {
+            return base;
+          }
+        }
+      }
+    } else if (word.length < base.length) {
+      // new word is shorter — block BAG after BAGS
+      for (const suf of BANNED_SUFFIXES) {
+        if (base === word + suf) {
+          if (pathStartsWith(cw.path, path) || pathEndsWith(cw.path, path)) {
+            return base;
+          }
         }
       }
     }
