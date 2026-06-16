@@ -862,7 +862,7 @@ function renderPlayerForms() {
       ['easy','medium'].forEach(d => {
         const b = document.createElement('button');
         b.className = 'pform-cpu-btn' + (diff === d ? ' selected' : '');
-        b.textContent = d === 'easy' ? 'CPU Easy' : 'CPU Medium';
+        b.textContent = d === 'easy' ? 'BOT Easy' : 'BOT Medium';
         b.onclick = () => { setupData[i].botDifficulty = d; renderPlayerForms(); };
         diffRow.appendChild(b);
       });
@@ -883,7 +883,7 @@ function renderPlayerForms() {
 
       const cpuBtn = document.createElement('button');
       cpuBtn.className = 'pform-cpu-btn';
-      cpuBtn.textContent = 'CPU';
+      cpuBtn.textContent = 'BOT';
       cpuBtn.onclick = () => { setupData[i].isBot = true; renderPlayerForms(); };
 
       row.appendChild(label);
@@ -943,13 +943,17 @@ function startGame() {
     alert('Dictionary not loaded. Please open the game via http://localhost:3456 (run "python3 serve.py" in the Word Gridlock folder first).');
     return;
   }
+  const totalBots = setupData.slice(0, numPlayers).filter(s => s.isBot).length;
+  let botIdx = 0;
   const players = [];
   for (let i = 0; i < numPlayers; i++) {
     const isBot = setupData[i].isBot;
     const diff  = setupData[i].botDifficulty;
     const raw   = setupData[i].name.trim().toUpperCase();
+    let botName;
+    if (isBot) { botIdx++; botName = totalBots === 1 ? 'BOT' : `BOT${botIdx}`; }
     players.push({
-      name: isBot ? (diff === 'medium' ? 'CPU Medium' : 'CPU Easy') : (raw || `P${i+1}`),
+      name: isBot ? botName : (raw || `P${i+1}`),
       color: setupData[i].color,
       score: 0,
       failStreak: 0,
