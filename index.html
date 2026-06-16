@@ -644,7 +644,7 @@ h1 {
     <h2>Board Size</h2>
     <div class="count-row" id="board-row"></div>
   </div>
-  <div class="setup-card" id="territory-card" style="display:none">
+  <div class="setup-card" id="territory-card">
     <h2>Territory Mode</h2>
     <div class="count-row" id="territory-row"></div>
     <p id="territory-desc" style="font-size:0.75rem;color:#64748b;margin-top:0.75rem"></p>
@@ -731,7 +731,7 @@ h1 {
 </div>
 
 <!-- ══ VERSION ══════════════════════════════════════════ -->
-<div style="position:fixed;bottom:6px;right:10px;font-size:0.65rem;color:rgba(255,255,255,0.15);pointer-events:none;user-select:none">v1.1.14</div>
+<div style="position:fixed;bottom:6px;right:10px;font-size:0.65rem;color:rgba(255,255,255,0.15);pointer-events:none;user-select:none">v1.1.20</div>
 
 <!-- ══ END ═════════════════════════════════════════════ -->
 <div id="end-screen">
@@ -803,6 +803,8 @@ let minWordLen = PLAYER_DEFAULTS[2].minLen;
 let boardSize  = PLAYER_DEFAULTS[2].board;
 let setupData = []; // [{name, color}]
 let territoryMode = 'off'; // 'off' | 'exclusive' | 'conquest'
+let userSetBoard = false;   // true once user manually picks a board size
+let userSetMinWord = false; // true once user manually picks a min word length
 
 function initSetup() {
   buildDict();
@@ -844,6 +846,7 @@ function initSetup() {
     b.dataset.n = n;
     b.onclick = () => {
       boardSize = n;
+      userSetBoard = true;
       br.querySelectorAll('.count-btn').forEach(btn => btn.classList.remove('selected'));
       b.classList.add('selected');
       updateTerritoryCardVisibility();
@@ -862,6 +865,7 @@ function initSetup() {
     b.dataset.n = n;
     b.onclick = () => {
       minWordLen = n;
+      userSetMinWord = true;
       mwr.querySelectorAll('.count-btn').forEach(btn => btn.classList.remove('selected'));
       b.classList.add('selected');
     };
@@ -871,7 +875,7 @@ function initSetup() {
   // territory buttons
   const tr = document.getElementById('territory-row');
   tr.innerHTML = '';
-  [{label:'Off', t:'off'}, {label:'Exclusive', t:'exclusive'}, {label:'Conquest', t:'conquest'}].forEach(({label, t}) => {
+  [{label:'Off', t:'off'}, {label:'Conquest', t:'conquest'}, {label:'Exclusive', t:'exclusive'}].forEach(({label, t}) => {
     const b = document.createElement('button');
     b.className = 'count-btn' + (t === territoryMode ? ' selected' : '');
     b.textContent = label;
@@ -897,14 +901,18 @@ function updateCountBtns() {
 
 function applyPlayerDefaults(n) {
   const def = PLAYER_DEFAULTS[n];
-  boardSize  = def.board;
-  minWordLen = def.minLen;
-  document.querySelectorAll('#board-row .count-btn').forEach(b => {
-    b.classList.toggle('selected', parseInt(b.dataset.n) === boardSize);
-  });
-  document.querySelectorAll('#minword-row .count-btn').forEach(b => {
-    b.classList.toggle('selected', parseInt(b.dataset.n) === minWordLen);
-  });
+  if (!userSetBoard) {
+    boardSize = def.board;
+    document.querySelectorAll('#board-row .count-btn').forEach(b => {
+      b.classList.toggle('selected', parseInt(b.dataset.n) === boardSize);
+    });
+  }
+  if (!userSetMinWord) {
+    minWordLen = def.minLen;
+    document.querySelectorAll('#minword-row .count-btn').forEach(b => {
+      b.classList.toggle('selected', parseInt(b.dataset.n) === minWordLen);
+    });
+  }
   updateTerritoryCardVisibility();
   updateMinWordBtnVisibility();
 }
@@ -939,12 +947,20 @@ function updateMinWordBtnVisibility() {
 }
 
 function updateTerritoryCardVisibility() {
-  const card = document.getElementById('territory-card');
+  document.getElementById('territory-card').style.display = '';
+  const exclusiveBtn = document.querySelector('#territory-row [data-t="exclusive"]');
+  if (!exclusiveBtn) return;
   if (boardSize === 10) {
-    card.style.display = '';
+    exclusiveBtn.disabled = false;
+    exclusiveBtn.style.opacity = '';
+    exclusiveBtn.style.cursor = '';
+    exclusiveBtn.title = '';
   } else {
-    card.style.display = 'none';
-    if (territoryMode !== 'off') setTerritory('off');
+    exclusiveBtn.disabled = true;
+    exclusiveBtn.style.opacity = '0.35';
+    exclusiveBtn.style.cursor = 'not-allowed';
+    exclusiveBtn.title = 'Requires 10×10 board';
+    if (territoryMode === 'exclusive') setTerritory('off');
   }
 }
 
@@ -1116,8 +1132,8 @@ function startGame() {
     mode: 'place',
     claimStart: null,
     selLetter: null,
-    territoryMode: boardSize === 10 ? territoryMode : 'off',
-    territory: (boardSize === 10 && territoryMode !== 'off')
+    territoryMode: (territoryMode === 'exclusive' && boardSize !== 10) ? 'off' : territoryMode,
+    territory: (territoryMode !== 'off' && !(territoryMode === 'exclusive' && boardSize !== 10))
       ? Array.from({length: boardSize}, () => Array(boardSize).fill(null))
       : null,
     aiRunning: false,
@@ -1336,16 +1352,9 @@ function attemptClaim(r1, c1, r2, c2) {
     word += G.grid[p.r][p.c].letter;
   }
 
-  // Check already-claimed: same word at same cells (either direction) — no fail
-  const pathKey = keyPath(path);
-  const revKey = keyPath([...path].reverse());
-  const duplicate = G.claimed.find(cw => {
-    if (cw.word !== word) return false; // different word on same cells is allowed (DEER/REED)
-    const k = keyPath(cw.path);
-    return k === pathKey || k === revKey;
-  });
-  if (duplicate) {
-    msg(`"${word}" has already been claimed here.`, 'info');
+  // Check already-claimed: same word string anywhere on the board
+  if (G.claimed.some(cw => cw.word === word)) {
+    msg(`"${word}" has already been claimed.`, 'info');
     return;
   }
 
@@ -1897,7 +1906,7 @@ function findAllBotWords() {
           if (!isValidWord(word)) continue;
           const pk = keyPath(path), rk = keyPath([...path].reverse());
           if (seen.has(pk)) continue;
-          if (G.claimed.some(cw => { if (cw.word !== word) return false; const k = keyPath(cw.path); return k === pk || k === rk; })) continue;
+          if (G.claimed.some(cw => cw.word === word)) continue;
           if (checkBannedExtension(word, path)) continue;
           seen.add(pk);
           results.push({word, path: path.map(p => ({...p})), score: word.length});
