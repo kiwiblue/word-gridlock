@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Word Gridlock</title>
+<title>Lexterra</title>
 <script src="words.js?v=3"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -632,7 +632,7 @@ h1 {
 </head>
 <body>
 
-<h1>Word Gridlock</h1>
+<h1>Lexterra</h1>
 
 <!-- ══ SETUP ═══════════════════════════════════════════ -->
 <div id="setup-screen">
@@ -666,7 +666,7 @@ h1 {
 
   <!-- Mobile-only header: title + timer on one line -->
   <div class="mob-hdr">
-    <span class="mob-title">Word Gridlock</span>
+    <span class="mob-title">Lexterra</span>
     <span id="mob-timer" class="mob-timer-num">2:00</span>
   </div>
 
@@ -731,7 +731,7 @@ h1 {
 </div>
 
 <!-- ══ VERSION ══════════════════════════════════════════ -->
-<div style="position:fixed;bottom:6px;right:10px;font-size:0.65rem;color:rgba(255,255,255,0.15);pointer-events:none;user-select:none">v1.1.26</div>
+<div style="position:fixed;bottom:6px;right:10px;font-size:0.65rem;color:rgba(255,255,255,0.15);pointer-events:none;user-select:none">v1.1.27</div>
 
 <!-- ══ END ═════════════════════════════════════════════ -->
 <div id="end-screen">
@@ -1084,7 +1084,7 @@ let G = null; // game state
 function startGame() {
   if (G && G.interval) clearInterval(G.interval);
   if (dict.size === 0) {
-    alert('Dictionary not loaded. Please open the game via http://localhost:3456 (run "python3 serve.py" in the Word Gridlock folder first).');
+    alert('Dictionary not loaded. Please open the game via http://localhost:3456 (run "python3 serve.py" in the Lexterra folder first).');
     return;
   }
   const totalBots = setupData.slice(0, numPlayers).filter(s => s.isBot).length;
