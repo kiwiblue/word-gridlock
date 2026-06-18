@@ -699,7 +699,7 @@ h1 {
         <div class="bonus-line" id="bonus-line" style="display:none"></div>
         <div class="btn-row">
           <button class="btn btn-claim" id="btn-claim" onclick="toggleClaim()">Claim Word</button>
-          <button class="btn btn-pass" onclick="doPass()">Pass</button>
+          <button class="btn btn-pass" id="btn-pass" onclick="doPass()">Pass</button>
         </div>
       </div>
 
@@ -1754,6 +1754,9 @@ function refreshControls() {
   } else {
     bonusLine.style.display = 'none';
   }
+
+  const btnPass = document.getElementById('btn-pass');
+  if (btnPass) btnPass.textContent = G.placedThisTurn > 0 ? 'Finish Turn' : 'Pass';
 }
 
 function updateWordList() {
@@ -2027,6 +2030,12 @@ async function runBotTurn() {
 // ═══════════════════════════════════════════════════
 
 initSetup();
+document.getElementById('footer-year').textContent = new Date().getFullYear();
 </script>
+
+<div id="site-footer" style="text-align:center;font-size:0.65rem;color:#475569;user-select:none;padding:16px 0 10px;margin-top:1rem">
+  © <span id="footer-year"></span> · <a href="https://buymeacoffee.com/chrissandford" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">Chris Sandford</a>
+</div>
+
 </body>
 </html>
