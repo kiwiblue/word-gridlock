@@ -877,7 +877,7 @@ function initSetup() {
   // territory buttons
   const tr = document.getElementById('territory-row');
   tr.innerHTML = '';
-  [{label:'Off', t:'off'}, {label:'Conquest', t:'conquest'}, {label:'Exclusive', t:'exclusive'}].forEach(({label, t}) => {
+  [{label:'Search', t:'off'}, {label:'Conquest', t:'conquest'}, {label:'Keeps', t:'exclusive'}].forEach(({label, t}) => {
     const b = document.createElement('button');
     b.className = 'count-btn' + (t === territoryMode ? ' selected' : '');
     b.textContent = label;
@@ -920,8 +920,8 @@ function applyPlayerDefaults(n) {
 }
 
 const TERRITORY_DESC = {
-  off:       '',
-  exclusive: 'Claimed tiles are locked to the claimer — others cannot use them.',
+  off:       'Claim words to score points. No territory — just points.',
+  exclusive: 'Claimed tiles are locked to the claimer — others cannot use them. Most tiles at game end wins.',
   conquest:  'Anyone can use any tile. Claiming a word steals all its tiles. Most tiles at game end wins.',
 };
 
@@ -1627,8 +1627,9 @@ function buildKeyboard() {
 }
 
 function buildGameInfo() {
-  const modeLabel = { off: 'Standard', exclusive: 'Exclusive', conquest: 'Conquest' }[G.territoryMode];
+  const modeLabel = { off: 'Search', exclusive: 'Keeps', conquest: 'Conquest' }[G.territoryMode];
   const modeDesc = {
+    off:       'Claim words to score points. No territory — just points.',
     exclusive: 'Claimed tiles are locked to their owner — others cannot use them. Most tiles at game end wins.',
     conquest:  'Claiming a word steals all its tiles. Most tiles at game end wins.',
   }[G.territoryMode] || '';
@@ -1886,6 +1887,16 @@ function findAllBotWords() {
     {dr:0,dc:1},{dr:0,dc:-1},{dr:1,dc:0},{dr:-1,dc:0},
     {dr:1,dc:1},{dr:1,dc:-1},{dr:-1,dc:1},{dr:-1,dc:-1}
   ];
+  const claimedWords = G.claimed.map(c => c.word.toLowerCase());
+  const isClaimedVariant = w => {
+    const wl = w.toLowerCase();
+    return claimedWords.some(cw =>
+      wl === cw || wl === cw + 's' || wl === cw + 'es' ||
+      (wl.endsWith('ies') && cw === wl.slice(0,-3) + 'y') ||
+      cw === wl + 's' || cw === wl + 'es' ||
+      (cw.endsWith('ies') && wl === cw.slice(0,-3) + 'y')
+    );
+  };
   for (let r = 0; r < G.rows; r++) {
     for (let c = 0; c < G.cols; c++) {
       if (!G.grid[r][c]) continue;
@@ -1902,9 +1913,9 @@ function findAllBotWords() {
             if (path.some(p => { const o = G.territory[p.r][p.c]; return o !== null && o !== G.cur; })) continue;
           }
           if (!isValidWord(word)) continue;
-          const pk = keyPath(path), rk = keyPath([...path].reverse());
+          const pk = keyPath(path);
           if (seen.has(pk)) continue;
-          if (G.claimed.some(cw => cw.word === word)) continue;
+          if (isClaimedVariant(word)) continue;
           if (checkBannedExtension(word, path)) continue;
           seen.add(pk);
           results.push({word, path: path.map(p => ({...p})), score: word.length});
@@ -1918,16 +1929,14 @@ function findAllBotWords() {
 function chooseBotWord(words, difficulty) {
   if (!words.length) return null;
   if (difficulty === 'easy') {
-    if (Math.random() < 0.6) return null; // miss 60% of the time
-    // Only notice the shortest words (exactly minWordLen) — humans find longer ones first
-    const shortest = words.filter(w => w.score === minWordLen);
-    if (!shortest.length) return null;
-    return shortest[Math.floor(Math.random() * shortest.length)];
+    // Random pick — doesn't always grab the best word
+    return words[Math.floor(Math.random() * words.length)];
   }
-  // Hard: prefer 5+ letter words
-  const long = words.filter(w => w.score >= 5);
-  const pool = long.length ? long : words;
-  return pool.reduce((best, w) => w.score > best.score ? w : best, pool[0]);
+  // Hard: strongly prefer longer words; only occasionally claim short ones
+  const pick = words.find(w => w.score >= minWordLen + 2)
+    ?? words.find(w => w.score >= minWordLen + 1)
+    ?? (Math.random() < 0.25 ? words[0] : null);
+  return pick ?? null;
 }
 
 function chooseBotPlacement(difficulty) {
@@ -1955,7 +1964,7 @@ function chooseBotPlacement(difficulty) {
   for (const {r, c} of sample) {
     for (const letter of tryLetters) {
       G.grid[r][c] = { letter, pi: G.cur };
-      const score = findAllBotWords().length;
+      const score = findAllBotWords().reduce((s, w) => s + Math.pow(w.score, 3), 0);
       G.grid[r][c] = null;
       if (score > bestScore) { bestScore = score; bestOptions = [{r, c, letter}]; }
       else if (score === bestScore) bestOptions.push({r, c, letter});
@@ -1982,35 +1991,41 @@ async function runBotTurn() {
   const sleep = ms => new Promise(res => setTimeout(res, ms));
   const myIdx = G.cur;
   const diff  = G.players[myIdx].botDifficulty;
+  const isHard = diff === 'hard';
 
   try {
-    while (G && G.cur === myIdx && G.lettersLeft > 0) {
-      const placement = chooseBotPlacement(diff);
-      if (!placement) break;
-      const { r: pr, c: pc, letter } = placement;
-
-      G.grid[pr][pc] = { letter, pi: myIdx };
-      G.lettersLeft--;
-      G.placedThisTurn++;
-      G.passCount = 0;
-      refreshCell(pr, pc);
-      resetTimer();
-      refreshUI();
-      await sleep(diff === 'easy' ? 700 : 500);
+    // Place a letter
+    if (G.lettersLeft > 0) {
+      await sleep(isHard ? 500 : 700 + Math.random() * 400);
       if (!G || G.cur !== myIdx) return;
+      const placement = chooseBotPlacement(diff);
+      if (placement) {
+        const { r: pr, c: pc, letter } = placement;
+        G.grid[pr][pc] = { letter, pi: myIdx };
+        G.lettersLeft--;
+        G.placedThisTurn++;
+        G.passCount = 0;
+        refreshCell(pr, pc);
+        resetTimer();
+        refreshUI();
+      }
+    }
 
+    await sleep(isHard ? 700 : 900);
+    if (!G || G.cur !== myIdx) return;
+
+    // Claim a word — skip if passes suggest the board is exhausted
+    const humanCount = G.players.filter(p => !p.isBot).length;
+    const passThreshold = isHard ? humanCount * 2 : humanCount;
+    if (G.passCount < passThreshold || passThreshold === 0) {
       const words  = findAllBotWords();
       const chosen = chooseBotWord(words, diff);
-      if (!chosen) break;
-
-      await sleep(diff === 'easy' ? 900 : 700);
-      if (!G || G.cur !== myIdx) return;
-
-      const p = chosen.path;
-      attemptClaim(p[0].r, p[0].c, p[p.length-1].r, p[p.length-1].c);
-      await sleep(600);
-      if (!G || G.cur !== myIdx) return;
-      break; // one letter placed, one word claimed per turn
+      if (chosen) {
+        const p = chosen.path;
+        attemptClaim(p[0].r, p[0].c, p[p.length-1].r, p[p.length-1].c);
+        await sleep(600);
+        if (!G || G.cur !== myIdx) return;
+      }
     }
   } finally {
     if (G) {
