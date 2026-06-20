@@ -732,7 +732,7 @@ h1 {
 </div>
 
 <!-- ══ VERSION ══════════════════════════════════════════ -->
-<div style="position:fixed;bottom:6px;right:10px;font-size:0.65rem;color:rgba(255,255,255,0.15);pointer-events:none;user-select:none">v1.1.30</div>
+<div style="position:fixed;bottom:6px;right:10px;font-size:0.65rem;color:rgba(255,255,255,0.15);pointer-events:none;user-select:none">v1.1.31</div>
 
 <!-- ══ END ═════════════════════════════════════════════ -->
 <div id="end-screen">
@@ -760,6 +760,12 @@ const COLOR_NAMES = Object.keys(COLORS);
 
 const TIMER_MAX = 120;
 const BANNED_SUFFIXES = ['ING', 'ES', 'ED', 'S', 'D'];
+
+// Words bots will never claim, even though humans can.
+// Populate with mild profanity once the full list is ready.
+const BOT_BANNED_WORDS = new Set([
+  // add words here in uppercase
+]);
 
 // Returns true if `long` has a better etymological root than `short` in the dictionary.
 // e.g. hasBetterRoot("SITES","SIT") → true because SITE+S=SITES and SITE is longer than SIT.
@@ -1931,6 +1937,7 @@ function findAllBotWords() {
           if (seen.has(pk)) continue;
           if (isClaimedVariant(word)) continue;
           if (checkBannedExtension(word, path)) continue;
+          if (BOT_BANNED_WORDS.has(word)) continue;
           seen.add(pk);
           results.push({word, path: path.map(p => ({...p})), score: word.length});
         }
@@ -2063,7 +2070,7 @@ document.getElementById('footer-year').textContent = new Date().getFullYear();
 </script>
 
 <div id="site-footer" style="text-align:center;font-size:0.65rem;color:#475569;user-select:none;padding:16px 0 10px;margin-top:1rem">
-  © <span id="footer-year"></span> · <a href="https://buymeacoffee.com/chrissandford" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">Chris Sandford</a> · v1.1.30 · <a href="https://lexterragame.com/" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">Play Online Version</a>
+  © <span id="footer-year"></span> · <a href="https://buymeacoffee.com/chrissandford" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">Chris Sandford</a> · v1.1.31 · <a href="https://lexterragame.com/" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">Play Online Version</a>
 </div>
 
 </body>
