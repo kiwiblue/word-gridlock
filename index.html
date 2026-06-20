@@ -732,7 +732,7 @@ h1 {
 </div>
 
 <!-- ══ VERSION ══════════════════════════════════════════ -->
-<div style="position:fixed;bottom:6px;right:10px;font-size:0.65rem;color:rgba(255,255,255,0.15);pointer-events:none;user-select:none">v1.1.32</div>
+<div style="position:fixed;bottom:6px;right:10px;font-size:0.65rem;color:rgba(255,255,255,0.15);pointer-events:none;user-select:none">v1.1.33</div>
 
 <!-- ══ END ═════════════════════════════════════════════ -->
 <div id="end-screen">
@@ -760,6 +760,15 @@ const COLOR_NAMES = Object.keys(COLORS);
 
 const TIMER_MAX = 120;
 const BANNED_SUFFIXES = ['ING', 'ES', 'ED', 'S', 'D'];
+
+// Words nobody can claim. Keep in sync with Lexterra-MP party/index.js.
+const BANNED_WORDS = new Set([
+  "CUNT","CUNTS","FUCK","FUCKED","FUCKER","FUCKERS","FUCKING","FUCKINGS",
+  "FUCKOFF","FUCKOFFS","FUCKS","FUCKUP","FUCKUPS","FUCKWIT","FUCKWITS",
+  "HEADFUCK","HEADFUCKS","MINDFUCK","MINDFUCKS","MOTHERFUCKER","MOTHERFUCKERS",
+  "MOTHERFUCKING","STARFUCKER","STARFUCKERS","STARFUCKING","STARFUCKINGS",
+]);
+function isBannedWord(w) { return BANNED_WORDS.has(w.toUpperCase()); }
 
 // Words bots will never claim, even though humans can. Source: OFCOM list.
 const BOT_BANNED_WORDS = new Set([
@@ -1419,6 +1428,12 @@ function attemptClaim(r1, c1, r2, c2) {
   // Dictionary check (with morphological fallback for inflected forms)
   if (!isValidWord(word)) {
     registerFail(player, `"${word}" is not a valid word.`);
+    return;
+  }
+
+  // Profanity check
+  if (isBannedWord(word)) {
+    registerFail(player, `"${word}" isn't allowed in this family friendly game.`);
     return;
   }
 
@@ -2106,7 +2121,7 @@ document.getElementById('footer-year').textContent = new Date().getFullYear();
 </script>
 
 <div id="site-footer" style="text-align:center;font-size:0.65rem;color:#475569;user-select:none;padding:16px 0 10px;margin-top:1rem">
-  © <span id="footer-year"></span> · <a href="https://buymeacoffee.com/chrissandford" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">Chris Sandford</a> · v1.1.32 · <a href="https://lexterragame.com/" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">Play Online Version</a>
+  © <span id="footer-year"></span> · <a href="https://buymeacoffee.com/chrissandford" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">Chris Sandford</a> · v1.1.33 · <a href="https://lexterragame.com/" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">Play Online Version</a>
 </div>
 
 </body>
