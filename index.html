@@ -732,7 +732,7 @@ h1 {
 </div>
 
 <!-- ══ VERSION ══════════════════════════════════════════ -->
-<div style="position:fixed;bottom:6px;right:10px;font-size:0.65rem;color:rgba(255,255,255,0.15);pointer-events:none;user-select:none">v1.1.29</div>
+<div style="position:fixed;bottom:6px;right:10px;font-size:0.65rem;color:rgba(255,255,255,0.15);pointer-events:none;user-select:none">v1.1.30</div>
 
 <!-- ══ END ═════════════════════════════════════════════ -->
 <div id="end-screen">
@@ -760,6 +760,20 @@ const COLOR_NAMES = Object.keys(COLORS);
 
 const TIMER_MAX = 120;
 const BANNED_SUFFIXES = ['ING', 'ES', 'ED', 'S', 'D'];
+
+// Returns true if `long` has a better etymological root than `short` in the dictionary.
+// e.g. hasBetterRoot("SITES","SIT") → true because SITE+S=SITES and SITE is longer than SIT.
+// Prevents false blocks where word+suffix accidentally equals an unrelated word.
+function hasBetterRoot(long, short) {
+  if (!dict) return false;
+  for (const suf of BANNED_SUFFIXES) {
+    if (long.endsWith(suf) && long.length > suf.length) {
+      const other = long.slice(0, long.length - suf.length);
+      if (other !== short && other.length > short.length && dict.has(other)) return true;
+    }
+  }
+  return false;
+}
 
 const ICON_HUMAN = `<svg viewBox="0 0 16 16" width="15" height="15" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><circle cx="8" cy="5" r="2.8"/><path d="M2 15c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5" fill="currentColor"/></svg>`;
 const ICON_BOT   = `<svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg"><rect x="2.5" y="6" width="11" height="8" rx="1.5"/><circle cx="5.5" cy="10" r="1.2" fill="currentColor" stroke="none"/><circle cx="10.5" cy="10" r="1.2" fill="currentColor" stroke="none"/><line x1="8" y1="2.5" x2="8" y2="6"/><circle cx="8" cy="2" r="0.8" fill="currentColor" stroke="none"/></svg>`;
@@ -1430,18 +1444,18 @@ function checkBannedExtension(word, path) {
   for (const cw of G.claimed) {
     const base = cw.word;
     if (word.length > base.length) {
-      // new word is longer — block DOGS after DOG
+      // new word is longer — block DOGS after DOG, but not SITES after SIT
       for (const suf of BANNED_SUFFIXES) {
-        if (word === base + suf) {
+        if (word === base + suf && !hasBetterRoot(word, base)) {
           if (pathStartsWith(path, cw.path) || pathEndsWith(path, cw.path)) {
             return base;
           }
         }
       }
     } else if (word.length < base.length) {
-      // new word is shorter — block BAG after BAGS
+      // new word is shorter — block BAG after BAGS, but not SIT after SITES
       for (const suf of BANNED_SUFFIXES) {
-        if (base === word + suf) {
+        if (base === word + suf && !hasBetterRoot(base, word)) {
           if (pathStartsWith(cw.path, path) || pathEndsWith(cw.path, path)) {
             return base;
           }
@@ -2049,7 +2063,7 @@ document.getElementById('footer-year').textContent = new Date().getFullYear();
 </script>
 
 <div id="site-footer" style="text-align:center;font-size:0.65rem;color:#475569;user-select:none;padding:16px 0 10px;margin-top:1rem">
-  © <span id="footer-year"></span> · <a href="https://buymeacoffee.com/chrissandford" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">Chris Sandford</a> · v1.1.29 · <a href="https://lexterragame.com/" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">Play Online Version</a>
+  © <span id="footer-year"></span> · <a href="https://buymeacoffee.com/chrissandford" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">Chris Sandford</a> · v1.1.30 · <a href="https://lexterragame.com/" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">Play Online Version</a>
 </div>
 
 </body>
