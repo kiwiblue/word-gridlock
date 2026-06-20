@@ -732,7 +732,7 @@ h1 {
 </div>
 
 <!-- ══ VERSION ══════════════════════════════════════════ -->
-<div style="position:fixed;bottom:6px;right:10px;font-size:0.65rem;color:rgba(255,255,255,0.15);pointer-events:none;user-select:none">v1.1.31</div>
+<div style="position:fixed;bottom:6px;right:10px;font-size:0.65rem;color:rgba(255,255,255,0.15);pointer-events:none;user-select:none">v1.1.32</div>
 
 <!-- ══ END ═════════════════════════════════════════════ -->
 <div id="end-screen">
@@ -761,10 +761,46 @@ const COLOR_NAMES = Object.keys(COLORS);
 const TIMER_MAX = 120;
 const BANNED_SUFFIXES = ['ING', 'ES', 'ED', 'S', 'D'];
 
-// Words bots will never claim, even though humans can.
-// Populate with mild profanity once the full list is ready.
+// Words bots will never claim, even though humans can. Source: OFCOM list.
 const BOT_BANNED_WORDS = new Set([
-  // add words here in uppercase
+  "ARSE","ARSED","ARSEHOLE","ARSEHOLES","ARSES","ARSEY",
+  "BALLOCKS","BALLOCKSED","BALLOCKSES","BALLOCKSING","BALLS",
+  "BASTARD","BASTARDIES","BASTARDISATION","BASTARDISATIONS","BASTARDISE","BASTARDISED","BASTARDISES","BASTARDISING",
+  "BASTARDISM","BASTARDISMS","BASTARDIZATION","BASTARDIZATIONS","BASTARDIZE","BASTARDIZED","BASTARDIZES","BASTARDIZING",
+  "BASTARDLY","BASTARDRIES","BASTARDRY","BASTARDS","BASTARDY",
+  "BEAVER","BEAVERS","BINT","BINTS",
+  "BITCH","BITCHED","BITCHEN","BITCHERIES","BITCHERY","BITCHES","BITCHFEST","BITCHFESTS",
+  "BITCHIER","BITCHIEST","BITCHILY","BITCHINESS","BITCHINESSES","BITCHING","BITCHY",
+  "BLOODY","BLOODYING",
+  "BOLLOCK","BOLLOCKED","BOLLOCKING","BOLLOCKINGS","BOLLOCKS","BOLLOCKSED","BOLLOCKSES","BOLLOCKSING",
+  "BOLLOX","BOLLOXED","BOLLOXES","BOLLOXING",
+  "BUGGER","BUGGERED","BUGGERIES","BUGGERING","BUGGERS","BUGGERY",
+  "BULLSHIT","BULLSHITS","BULLSHITTED","BULLSHITTER","BULLSHITTERS","BULLSHITTING","BULLSHITTINGS",
+  "COCK","COCKS","COCKSUCKER","COCKSUCKERS","COCKTEASER","COCKTEASERS",
+  "CRAP","CRAPOLA","CRAPOLAS","CRAPPED","CRAPPER","CRAPPERS","CRAPPIER","CRAPPIEST","CRAPPING","CRAPPY","CRAPS",
+  "CUNT","CUNTS",
+  "DAMN","DAMNABLE","DAMNABLY","DAMNATION","DAMNATIONS","DAMNDEST","DAMNDESTS",
+  "DAMNED","DAMNEDER","DAMNEDEST","DAMNEDESTS","DAMNER","DAMNERS","DAMNING","DAMNS",
+  "DICK","DICKED","DICKHEAD","DICKHEADS","DICKING","DICKS",
+  "FANNY","FECK","FECKED","FECKIN","FECKING","FECKS","FLAPS",
+  "FUCK","FUCKED","FUCKER","FUCKERS","FUCKING","FUCKINGS","FUCKOFF","FUCKOFFS",
+  "FUCKS","FUCKUP","FUCKUPS","FUCKWIT","FUCKWITS",
+  "GASH","GASHED","GASHES","GASHING","GIT","GITS",
+  "GODDAM","GODDAMMED","GODDAMMING","GODDAMN","GODDAMNDEST","GODDAMNED","GODDAMNEDEST","GODDAMNING","GODDAMNS","GODDAMS",
+  "HEADFUCK","HEADFUCKS",
+  "KNOB","KNOBBING","KNOBHEAD","KNOBHEADS","KNOBS",
+  "MINDFUCK","MINDFUCKS","MINGE","MINGED","MINGER","MINGERS","MINGES",
+  "MOTHERFUCKER","MOTHERFUCKERS","MOTHERFUCKING","MUNTER","MUNTERS",
+  "PISS","PISSANT","PISSANTS","PISSED","PISSER","PISSERS","PISSES","PISSHEAD","PISSHEADS","PISSING",
+  "PRICK","PRICKED","PRICKER","PRICKERS","PRICKING","PRICKINGS","PRICKS","PUSSY",
+  "SHIT","SHITE","SHITED","SHITES","SHITFACED","SHITHEAD","SHITHEADS","SHITHOLE","SHITHOLES",
+  "SHITING","SHITLESS","SHITLIST","SHITLISTS","SHITLOAD","SHITLOADS","SHITS","SHITTED",
+  "SHITTIER","SHITTIEST","SHITTILY","SHITTINESS","SHITTINESSES","SHITTING","SHITTY",
+  "SNATCH","SNATCHED","SNATCHER","SNATCHERS","SNATCHES","SNATCHING",
+  "SOD","SODDING","SODS",
+  "STARFUCKER","STARFUCKERS","STARFUCKING","STARFUCKINGS",
+  "TIT","TITS","TITTED","TITTIE","TITTIES","TITTING","TITTY",
+  "TWAT","TWATS",
 ]);
 
 // Returns true if `long` has a better etymological root than `short` in the dictionary.
@@ -2070,7 +2106,7 @@ document.getElementById('footer-year').textContent = new Date().getFullYear();
 </script>
 
 <div id="site-footer" style="text-align:center;font-size:0.65rem;color:#475569;user-select:none;padding:16px 0 10px;margin-top:1rem">
-  © <span id="footer-year"></span> · <a href="https://buymeacoffee.com/chrissandford" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">Chris Sandford</a> · v1.1.31 · <a href="https://lexterragame.com/" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">Play Online Version</a>
+  © <span id="footer-year"></span> · <a href="https://buymeacoffee.com/chrissandford" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">Chris Sandford</a> · v1.1.32 · <a href="https://lexterragame.com/" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">Play Online Version</a>
 </div>
 
 </body>
